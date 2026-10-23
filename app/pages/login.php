@@ -8,21 +8,21 @@
     <?php require __DIR__ . '/../components/fonts.php'; ?>
 </head>
 
-<body class="font-sans antialiased min-h-screen bg-[#F7F9EF] flex items-center justify-center p-6">
+<body class="font-sans antialiased min-h-screen bg-stone-950 text-stone-100 flex items-center justify-center p-6">
 
     <a
         href="../../index.php"
         onclick="if (history.length > 1) { history.back(); return false; }"
         aria-label="Kembali ke halaman sebelumnya"
-        class="fixed top-6 left-6 w-11 h-11 flex items-center justify-center rounded-xl bg-white text-[#1B3B2B] shadow-sm hover:bg-[#EAF4EC] transition">
+        class="fixed top-6 left-6 w-11 h-11 flex items-center justify-center rounded-xl bg-stone-900 text-stone-100 border border-stone-800 shadow-sm hover:bg-stone-800 transition">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 12H5m6-6-6 6 6 6"></path>
         </svg>
     </a>
 
-    <main class="w-full max-w-[390px] bg-white rounded-3xl p-7 shadow-sm">
+    <main class="w-full max-w-[390px] bg-stone-900 border border-stone-800 rounded-3xl p-7 shadow-sm">
 
-        <div class="w-12 h-12 flex items-center justify-center bg-[#EAF4EC] rounded-2xl text-[#1B3B2B] mb-7">
+        <div class="w-12 h-12 flex items-center justify-center bg-emerald-950 rounded-2xl text-emerald-300 mb-7">
             <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round"
                     stroke-width="1.8"
@@ -31,17 +31,17 @@
             </svg>
         </div>
 
-        <h1 class="text-3xl font-bold text-[#1B3B2B] tracking-tight">
+        <h1 class="text-3xl font-semibold text-stone-100 tracking-tight">
             Senang kamu kembali.
         </h1>
 
-        <p class="mt-3 mb-8 text-sm leading-6 text-gray-500">
+        <p class="mt-3 mb-8 text-sm leading-6 text-stone-400">
             Masuk dan lihat apa yang perlu kamu fokuskan hari ini.
         </p>
 
         <form action="#" method="POST">
 
-            <label for="email" class="block text-sm font-semibold text-[#1B3B2B] mb-2">
+            <label for="email" class="block text-sm font-semibold text-stone-100 mb-2">
                 Email
             </label>
             <input
@@ -51,9 +51,9 @@
                 placeholder="Masukkan email kamu"
                 autocomplete="email"
                 required
-                class="w-full rounded-2xl border border-gray-200 px-4 py-3.5 text-sm outline-none focus:border-[#1B3B2B] mb-5">
+                class="w-full rounded-2xl border border-stone-700 bg-stone-950 px-4 py-3.5 text-sm text-stone-100 placeholder:text-stone-500 outline-none focus:border-emerald-300 focus:ring-1 focus:ring-emerald-300 mb-5">
 
-            <label for="password" class="block text-sm font-semibold text-[#1B3B2B] mb-2">
+            <label for="password" class="block text-sm font-semibold text-stone-100 mb-2">
                 Password
             </label>
             <input
@@ -63,23 +63,25 @@
                 placeholder="Masukkan password kamu"
                 autocomplete="current-password"
                 required
-                class="w-full rounded-2xl border border-gray-200 px-4 py-3.5 text-sm outline-none focus:border-[#1B3B2B]">
+                class="w-full rounded-2xl border border-stone-700 bg-stone-950 px-4 py-3.5 text-sm text-stone-100 placeholder:text-stone-500 outline-none focus:border-emerald-300 focus:ring-1 focus:ring-emerald-300">
 
-            <a href="#" class="mt-3 inline-block text-sm font-semibold text-[#1B3B2B] hover:underline">
-                Lupa password?
-            </a>
+            <div class="w-full flex text-right items-end justify-end">
+                <a href="#" class="mt-3 inline-block text-sm font-semibold text-emerald-300 hover:text-emerald-200 hover:underline">
+                    Lupa password?
+                </a>
+            </div>
 
             <button
                 type="submit"
-                class="w-full mt-7 rounded-2xl bg-[#1B3B2B] px-4 py-4 text-sm font-semibold text-white hover:bg-[#254C38] transition">
+                class="w-full mt-3 rounded-2xl bg-emerald-200 px-4 py-4 text-sm font-semibold text-stone-950 hover:bg-emerald-300 transition">
                 Masuk ke PUTU
             </button>
 
         </form>
 
-        <p class="mt-7 text-center text-sm text-gray-500">
+        <p class="mt-7 text-center text-sm text-stone-400">
             Belum punya akun?
-            <a href="register.php" class="font-semibold text-[#1B3B2B] hover:underline">
+            <a href="register.php" class="font-semibold text-emerald-300 hover:text-emerald-200 hover:underline">
                 Daftar sekarang
             </a>
         </p>
