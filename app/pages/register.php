@@ -8,40 +8,31 @@
     <?php require __DIR__ . '/../components/fonts.php'; ?>
 </head>
 
-<body class="font-sans antialiased min-h-screen bg-[#F7F9EF] flex items-center justify-center p-6">
+<body class="font-sans antialiased min-h-screen bg-stone-950 text-stone-100 flex items-center justify-center p-6">
 
-    <a
-        href="login.php"
-        onclick="if (history.length > 1) { history.back(); return false; }"
-        aria-label="Kembali ke halaman sebelumnya"
-        class="fixed top-6 left-6 w-11 h-11 flex items-center justify-center rounded-xl bg-white text-[#1B3B2B] shadow-sm hover:bg-[#EAF4EC] transition">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 12H5m6-6-6 6 6 6"></path>
-        </svg>
-    </a>
+    <main class="w-full flex flex-col gap-3 max-w-[390px] bg-stone-900 border border-stone-800 rounded-3xl p-7 shadow-sm">
 
-    <main class="w-full max-w-[390px] bg-white rounded-3xl p-7 shadow-sm">
+        <a href="../../index.php" class="flex gap-2">    
+            <h1 class="text-stone-100 text-5xl font-extrabold tracking-tighter">
+                putu<span class="text-lime-500">.</span>
+            </h1>
+        </a>
 
-        <div class="w-12 h-12 flex items-center justify-center bg-[#EAF4EC] rounded-2xl text-[#1B3B2B] mb-7">
-            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                    stroke-width="1.8"
-                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
-                </path>
-            </svg>
+        <div class="h-[1px] w-full bg-white/30 max-w-7xl mx-auto"></div>
+
+        <div class="mt-3 flex flex-col gap-2">
+            <h1 class="text-3xl font-semibold text-stone-100 tracking-tight">
+                Mulai perjalananmu.
+            </h1>
+    
+            <p class="text-sm leading-6 text-stone-400 max-w-[70%]">
+                Buat akun PUTU dan atur semua tugas kuliahmu dalam satu tempat.
+            </p>
         </div>
-
-        <h1 class="text-3xl font-bold text-[#1B3B2B] tracking-tight">
-            Mulai perjalananmu.
-        </h1>
-
-        <p class="mt-3 mb-8 text-sm leading-6 text-gray-500">
-            Buat akun PUTU dan atur semua tugas kuliahmu dalam satu tempat.
-        </p>
 
         <form action="#" method="POST">
 
-            <label for="nama" class="block text-sm font-semibold text-[#1B3B2B] mb-2">
+            <label for="nama" class="block text-sm font-semibold text-stone-100 mb-2">
                 Nama lengkap
             </label>
             <input
@@ -51,9 +42,9 @@
                 placeholder="Masukkan nama lengkap"
                 autocomplete="name"
                 required
-                class="w-full rounded-2xl border border-gray-200 px-4 py-3.5 text-sm outline-none focus:border-[#1B3B2B] mb-5">
+                class="w-full rounded-2xl border border-stone-700 bg-stone-950 px-4 py-3.5 text-sm text-stone-100 placeholder:text-stone-500 outline-none focus:border-lime-300 focus:ring-1 focus:ring-lime-300 mb-5">
 
-            <label for="email" class="block text-sm font-semibold text-[#1B3B2B] mb-2">
+            <label for="email" class="block text-sm font-semibold text-stone-100 mb-2">
                 Email
             </label>
             <input
@@ -63,9 +54,9 @@
                 placeholder="Masukkan email kamu"
                 autocomplete="email"
                 required
-                class="w-full rounded-2xl border border-gray-200 px-4 py-3.5 text-sm outline-none focus:border-[#1B3B2B] mb-5">
+                class="w-full rounded-2xl border border-stone-700 bg-stone-950 px-4 py-3.5 text-sm text-stone-100 placeholder:text-stone-500 outline-none focus:border-lime-300 focus:ring-1 focus:ring-lime-300 mb-5">
 
-            <label for="password" class="block text-sm font-semibold text-[#1B3B2B] mb-2">
+            <label for="password" class="block text-sm font-semibold text-stone-100 mb-2">
                 Password
             </label>
             <input
@@ -76,19 +67,19 @@
                 autocomplete="new-password"
                 minlength="8"
                 required
-                class="w-full rounded-2xl border border-gray-200 px-4 py-3.5 text-sm outline-none focus:border-[#1B3B2B] mb-5">
+                class="w-full rounded-2xl border border-stone-700 bg-stone-950 px-4 py-3.5 text-sm text-stone-100 placeholder:text-stone-500 outline-none focus:border-lime-300 focus:ring-1 focus:ring-lime-300 mb-5">
 
             <button
                 type="submit"
-                class="w-full mt-7 rounded-2xl bg-[#1B3B2B] px-4 py-4 text-sm font-semibold text-white hover:bg-[#254C38] transition">
+                class="w-full mt-7 rounded-2xl bg-lime-500 px-4 py-4 text-sm font-semibold text-stone-950 hover:bg-lime-300 transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-lime-300 focus:ring-offset-1">
                 Buat akun PUTU
             </button>
 
         </form>
 
-        <p class="mt-7 text-center text-sm text-gray-500">
+        <p class="mt-7 text-center text-sm text-stone-400">
             Sudah punya akun?
-            <a href="login.php" class="font-semibold text-[#1B3B2B] hover:underline">
+            <a href="login.php" class="font-semibold text-lime-500 hover:text-lime-300 hover:underline">
                 Masuk sekarang
             </a>
         </p>

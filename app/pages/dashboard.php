@@ -6,95 +6,95 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <?php require dirname(__DIR__) . '/components/fonts.php'; ?>
     <link rel="stylesheet" href="../../public/assets/css/app.css">
-    <title>Beranda - PUTULAGI</title>
+    <title>PUTU | Beranda</title>
 </head>
-<body class="font-sans antialiased bg-emerald-950">
-    <nav class="border-b border-white/40 backdrop-blur-md fixed top-0 left-0 w-full z-50">
-        <div class="flex items-center justify-between p-4">
-            <div class="flex flex-row gap-2 items-center">
-                <img
-                    src="../../public/assets/images/logo.svg"
-                    alt="Logo PUTU"
-                    class="w-10 h-10 p-2 text-emerald-950 bg-white rounded-xl"
-                />
-                <a href="dashboard.php" class="text-stone-100 text-2xl font-extrabold tracking-tighter">
-                    putu<span class="text-lime-500">.</span>
-                </a>
-            </div>
-            <div class="flex items-center gap-2">
-                <a href="dashboard.php" class="bg-emerald-200 text-emerald-950 font-semibold tracking-tighter py-2 px-5 rounded-lg">Beranda</a>
-                <a href="tugas.php" class="text-white font-semibold tracking-tighter hover:text-emerald-200 transition duration-300 px-3">Tugas</a>
-                <a href="jadwal.php" class="text-white font-semibold tracking-tighter hover:text-emerald-200 transition duration-300 px-3">Jadwal</a>
-                <a href="pengumuman.php" class="text-white font-semibold tracking-tighter hover:text-emerald-200 transition duration-300 px-3">Pengumuman</a>
-            </div>
-        </div>
+<body class="font-sans antialiased bg-stone-950 text-stone-100">
+
+    <!-- Navbar -->
+    <nav class="w-full sticky top-0 z-50 border-b border-stone-800  backdrop-blur-sm">
+        <div class="mx-auto flex max-w-5xl items-center justify-between gap-4 p-4">
+            <a href="dashboard.php" class="flex items-center gap-2">
+                <span class="hidden text-4xl font-extrabold tracking-tighter text-stone-100 sm:inline">putu<span class="text-lime-500">.</span></span>
+            </a>
+
+            
     </nav>
 
-    <main class="min-h-screen px-20 pt-32 pb-20">
-        <section class="mx-auto lg:max-w-5xl w-full">
-            <h1 class="text-5xl leading-tight tracking-tighter text-stone-100">
-                Halo, Juan.
-                <br>
-                <span class="text-[#A0CBB5]">Yuk, buat hari ini sedikit lebih teratur.</span>
-            </h1>
+    <main class="min-h-screen px-5 py-12 sm:px-6 lg:py-16">
+        <div class="mx-auto flex w-full max-w-5xl flex-col gap-12 lg:gap-16">
 
-            <div class="mt-10 grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="rounded-2xl border border-white/10 bg-emerald-900/40 p-5">
-                    <p class="text-sm text-emerald-100/70">Tugas aktif</p>
-                    <p class="mt-2 text-4xl font-extrabold tracking-tighter text-stone-100">03</p>
-                </div>
-                <div class="rounded-2xl border border-white/10 bg-emerald-900/40 p-5">
-                    <p class="text-sm text-emerald-100/70">Perlu diprioritaskan</p>
-                    <p class="mt-2 text-4xl font-extrabold tracking-tighter text-stone-100">01</p>
-                </div>
-                <div class="rounded-2xl border border-white/10 bg-emerald-900/40 p-5">
-                    <p class="text-sm text-emerald-100/70">Sedang dikerjakan</p>
-                    <p class="mt-2 text-4xl font-extrabold tracking-tighter text-stone-100">01</p>
-                </div>
-                <div class="rounded-2xl border border-white/10 bg-emerald-900/40 p-5">
-                    <p class="text-sm text-emerald-100/70">Sudah selesai</p>
-                    <p class="mt-2 text-4xl font-extrabold tracking-tighter text-stone-100">00</p>
-                </div>
-            </div>
+            <!-- Sapaan -->
+            <section>
+                <p class="text-xs font-semibold uppercase tracking-wide text-lime-500">Beranda</p>
+                <h1 class="mt-2 text-3xl font-semibold text-stone-100">Halo, Juan.</h1>
+                <p class="mt-2 text-sm leading-6 text-stone-400">Yuk, buat hari ini sedikit lebih teratur.</p>
+            </section>
 
-            <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div class="rounded-2xl border border-white/10 bg-emerald-900/40 p-6">
-                    <div class="flex items-center justify-between">
-                        <h2 class="text-2xl font-extrabold tracking-tighter text-stone-100">Tugas terdekat</h2>
-                        <a href="tugas.php" class="text-sm font-semibold text-emerald-200 hover:text-white transition duration-300">Lihat semua</a>
+            <!-- Ringkasan -->
+            <section class="grid grid-cols-2 gap-6 lg:grid-cols-2">
+                <div class="rounded-3xl border border-stone-800 bg-stone-900 p-5 sm:p-6">
+                    <p class="text-xs font-semibold text-stone-400">Tugas aktif</p>
+                    <p class="mt-2 text-3xl font-semibold text-stone-100">03</p>
+                </div>
+                <div class="rounded-3xl border border-stone-800 bg-stone-900 p-5 sm:p-6">
+                    <p class="text-xs font-semibold text-stone-400">Perlu diprioritaskan</p>
+                    <p class="mt-2 text-3xl font-semibold text-stone-100">01</p>
+                </div>
+                <div class="rounded-3xl border border-stone-800 bg-stone-900 p-5 sm:p-6">
+                    <p class="text-xs font-semibold text-stone-400">Sedang dikerjakan</p>
+                    <p class="mt-2 text-3xl font-semibold text-stone-100">01</p>
+                </div>
+                <div class="rounded-3xl border border-stone-800 bg-stone-900 p-5 sm:p-6">
+                    <p class="text-xs font-semibold text-stone-400">Sudah selesai</p>
+                    <p class="mt-2 text-3xl font-semibold text-stone-100">00</p>
+                </div>
+            </section>
+
+            <!-- Tugas dan agenda -->
+            <section class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+
+                <div class="rounded-3xl border border-stone-800 bg-stone-900 p-5 sm:p-6">
+                    <div class="flex items-center justify-between gap-4">
+                        <h2 class="text-xl font-semibold text-stone-100">Mulai dari yang terdekat</h2>
+                        <a href="tugas.php" class="text-sm font-semibold text-lime-500 hover:text-lime-300 hover:underline">Lihat semua &rarr;</a>
                     </div>
-                    <div class="mt-4 flex flex-col gap-3">
-                        <div class="rounded-xl bg-white/5 p-4">
-                            <p class="font-semibold text-stone-100">Normalisasi database minimarket</p>
-                            <p class="mt-1 text-sm text-emerald-100/70">Basis Data, 16 Okt</p>
-                            <p class="mt-2 text-xs font-semibold text-red-200">Terlambat</p>
+                    <div class="mt-5 flex flex-col gap-3">
+                        <div class="flex items-center justify-between gap-4 rounded-2xl border border-stone-800 bg-stone-950 p-4">
+                            <div>
+                                <p class="text-sm font-semibold text-stone-100">Normalisasi database minimarket</p>
+                                <p class="mt-1 text-xs leading-4 text-stone-400">Basis Data, 16 Okt</p>
+                            </div>
+                            <span class="shrink-0 rounded-full bg-red-950 px-3 py-1 text-xs font-semibold text-red-300">Terlambat</span>
                         </div>
-                        <div class="rounded-xl bg-white/5 p-4">
-                            <p class="font-semibold text-stone-100">Program inheritance Java</p>
-                            <p class="mt-1 text-sm text-emerald-100/70">Pemrograman Berorientasi Objek, 22 Okt</p>
-                            <p class="mt-2 text-xs font-semibold text-emerald-200">Dikerjakan</p>
+                        <div class="flex items-center justify-between gap-4 rounded-2xl border border-stone-800 bg-stone-950 p-4">
+                            <div>
+                                <p class="text-sm font-semibold text-stone-100">Program inheritance Java</p>
+                                <p class="mt-1 text-xs leading-4 text-stone-400">Pemrograman Berorientasi Objek, 22 Okt</p>
+                            </div>
+                            <span class="shrink-0 rounded-full bg-blue-950 px-3 py-1 text-xs font-semibold text-blue-300">Dikerjakan</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="rounded-2xl border border-white/10 bg-emerald-900/40 p-6">
-                    <div class="flex items-center justify-between">
-                        <h2 class="text-2xl font-extrabold tracking-tighter text-stone-100">Agenda kuliah</h2>
-                        <a href="jadwal.php" class="text-sm font-semibold text-emerald-200 hover:text-white transition duration-300">Jadwal lengkap</a>
+                <div class="rounded-3xl border border-stone-800 bg-stone-900 p-5 sm:p-6">
+                    <div class="flex items-center justify-between gap-4">
+                        <h2 class="text-xl font-semibold text-stone-100">Agenda kuliah</h2>
+                        <a href="jadwal.php" class="text-sm font-semibold text-lime-500 hover:text-lime-300 hover:underline">Jadwal lengkap &rarr;</a>
                     </div>
-                    <div class="mt-4 flex flex-col gap-3">
-                        <div class="rounded-xl bg-white/5 p-4">
-                            <p class="font-semibold text-stone-100">Basis Data</p>
-                            <p class="mt-1 text-sm text-emerald-100/70">08.00-09.40, Ruang TI</p>
+                    <div class="mt-5 flex flex-col gap-3">
+                        <div class="rounded-2xl border border-stone-800 bg-stone-950 p-4">
+                            <p class="text-sm font-semibold text-stone-100">Basis Data</p>
+                            <p class="mt-1 text-xs leading-4 text-stone-400">08.00-09.40, Ruang TI</p>
                         </div>
-                        <div class="rounded-xl bg-white/5 p-4">
-                            <p class="font-semibold text-stone-100">Pemrograman Berorientasi Objek</p>
-                            <p class="mt-1 text-sm text-emerald-100/70">10.00-11.40, Laboratorium</p>
+                        <div class="rounded-2xl border border-stone-800 bg-stone-950 p-4">
+                            <p class="text-sm font-semibold text-stone-100">Pemrograman Berorientasi Objek</p>
+                            <p class="mt-1 text-xs leading-4 text-stone-400">10.00-11.40, Laboratorium</p>
                         </div>
                     </div>
                 </div>
-            </div>
-        </section>
+
+            </section>
+        </div>
     </main>
 </body>
 </html>
