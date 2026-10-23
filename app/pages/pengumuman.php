@@ -1,69 +1,21 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <?php require dirname(__DIR__) . '/components/fonts.php'; ?>
-    <link rel="stylesheet" href="../../public/assets/css/app.css">
-    <title>Pengumuman - PUTULAGI</title>
-</head>
-<body class="font-sans antialiased bg-emerald-950">
-    <nav class="border-b border-white/40 backdrop-blur-md fixed top-0 left-0 w-full z-50">
-        <div class="flex items-center justify-between p-4">
-            <div class="flex flex-row gap-2 items-center">
-                <img
-                    src="../../public/assets/images/logo.svg"
-                    alt="Logo PUTU"
-                    class="w-10 h-10 p-2 text-emerald-950 bg-white rounded-xl"
-                />
-                <a href="../../index.php" class="text-stone-100 text-2xl font-extrabold tracking-tighter">
-                    putu<span class="text-lime-500">.</span>
-                </a>
-            </div>
-            <div class="flex items-center gap-2">
-                <a href="dashboard.php" class="text-white font-semibold tracking-tighter hover:text-emerald-200 transition duration-300 px-3">Beranda</a>
-                <a href="tugas.php" class="text-white font-semibold tracking-tighter hover:text-emerald-200 transition duration-300 px-3">Tugas</a>
-                <a href="jadwal.php" class="text-white font-semibold tracking-tighter hover:text-emerald-200 transition duration-300 px-3">Jadwal</a>
-                <a href="pengumuman.php" class="bg-emerald-200 text-emerald-950 font-semibold tracking-tighter py-2 px-5 rounded-lg">Pengumuman</a>
-            </div>
-        </div>
-    </nav>
-
-    <main class="min-h-screen px-20 pt-32 pb-20">
-        <section class="mx-auto lg:max-w-3xl w-full">
-            <h1 class="text-5xl leading-tight tracking-tighter text-stone-100">
-                Pengumuman kampus
-                <br>
-                <span class="text-[#A0CBB5]">Informasi untuk SIB - 2B.</span>
-            </h1>
-
-            <div class="mt-10 flex flex-col gap-4">
-                <article class="rounded-2xl border border-red-300/40 bg-emerald-900/40 p-6">
-                    <p class="text-sm font-semibold text-red-200">Prioritas</p>
-                    <h2 class="mt-2 text-2xl font-extrabold tracking-tighter text-stone-100">Perubahan ruang kelas Basis Data</h2>
-                    <p class="mt-1 text-sm text-emerald-100/70">Admin Akademik, 20 Okt 2026</p>
-                    <p class="mt-3 text-emerald-50/90">Perkuliahan Basis Data hari Kamis dipindahkan ke LPR7, Gedung B. Jam perkuliahan tetap mengikuti jadwal.</p>
-                    <a href="#" class="mt-4 inline-block font-semibold tracking-tighter text-emerald-200 hover:text-white transition duration-300">Baca selengkapnya</a>
-                </article>
-
-                <article class="rounded-2xl border border-white/10 bg-emerald-900/40 p-6">
-                    <p class="text-sm font-semibold text-emerald-200">Kemahasiswaan</p>
-                    <h2 class="mt-2 text-2xl font-extrabold tracking-tighter text-stone-100">Saatnya upgrade skill: sertifikasi database</h2>
-                    <p class="mt-1 text-sm text-emerald-100/70">Admin Kemahasiswaan, 18 Okt 2026</p>
-                    <p class="mt-3 text-emerald-50/90">Pendaftaran sertifikasi database dibuka untuk mahasiswa Sistem Informasi Bisnis. Kuota terbatas.</p>
-                    <a href="#" class="mt-4 inline-block font-semibold tracking-tighter text-emerald-200 hover:text-white transition duration-300">Baca selengkapnya</a>
-                </article>
-
-                <article class="rounded-2xl border border-white/10 bg-emerald-900/40 p-6">
-                    <p class="text-sm font-semibold text-emerald-200">Akademik</p>
-                    <h2 class="mt-2 text-2xl font-extrabold tracking-tighter text-stone-100">Persiapan pekan UTS</h2>
-                    <p class="mt-1 text-sm text-emerald-100/70">Admin Akademik, 15 Okt 2026</p>
-                    <p class="mt-3 text-emerald-50/90">UTS dimulai pekan depan. Cek jadwal ujian dan hadir 15 menit sebelum ujian dimulai.</p>
-                    <a href="#" class="mt-4 inline-block font-semibold tracking-tighter text-emerald-200 hover:text-white transition duration-300">Baca selengkapnya</a>
-                </article>
-            </div>
-        </section>
-    </main>
-</body>
-</html>
+<?php if (!defined('PUTU_APP')) { header('Location: ../../index.php?page=pengumuman'); exit; } ?>
+<section class="mb-8"><p class="eyebrow">Stay in the loop</p><h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Kabar kelas<span class="text-lime-300">.</span></h1><p class="mt-3 text-sm leading-6 text-stone-400">Informasi penting punya tempatnya sendiri. Untuk SIB 2B.</p></section>
+<div class="mb-6 flex flex-wrap gap-2" role="group" aria-label="Kategori pengumuman">
+    <?php foreach (['Semua', 'Penting', 'Akademik', 'Kesempatan', 'Agenda'] as $category): ?><button type="button" data-news-filter="<?= e($category) ?>" aria-pressed="<?= $category === 'Semua' ? 'true' : 'false' ?>" class="filter-tab"><?= e($category) ?></button><?php endforeach; ?>
+</div>
+<p id="news-result" role="status" aria-live="polite" class="mb-4 text-xs text-stone-400"><?= count($announcements) ?> pengumuman</p>
+<div class="max-w-4xl space-y-4">
+    <?php foreach ($announcements as $news): ?>
+        <article class="panel p-5 sm:p-7" data-news-card data-category="<?= e($news['category']) ?>" data-important="<?= $news['important'] ? 'true' : 'false' ?>" id="news-<?= e($news['id']) ?>">
+            <div class="flex flex-wrap items-center gap-2"><span class="tag bg-stone-800 text-stone-300"><?= e($news['category']) ?></span><?php if ($news['important']): ?><span class="tag bg-amber-300/10 text-amber-200"><?= icon('bell', 'size-3') ?>Penting</span><?php endif; ?><span class="ml-auto text-xs text-stone-400"><?= e(date_id($news['date'])) ?></span></div>
+            <h2 class="mt-5 text-xl font-semibold leading-8 tracking-tight"><?= e($news['title']) ?></h2>
+            <p class="mt-2 text-xs text-stone-400">Oleh <?= e($news['author']) ?></p>
+            <p class="mt-4 text-sm leading-7 text-stone-400"><?= e($news['summary']) ?></p>
+            <details class="mt-4" <?= ($_GET['id'] ?? '') === $news['id'] ? 'open' : '' ?>>
+                <summary class="flex min-h-11 w-fit items-center gap-2 text-xs font-semibold text-lime-300">Baca selengkapnya<span class="details-arrow transition-transform"><?= icon('chevron', 'size-3') ?></span></summary>
+                <div class="mt-3 border-t border-stone-800 pt-4 text-sm leading-8 text-stone-300"><?= e($news['body']) ?></div>
+            </details>
+        </article>
+    <?php endforeach; ?>
+    <div id="news-empty" hidden class="panel px-6 py-14 text-center"><span class="mx-auto flex size-12 items-center justify-center rounded-2xl bg-lime-300/10 text-lime-300"><?= icon('bell') ?></span><h2 class="mt-4 text-lg font-semibold">Belum ada kabar di kategori ini.</h2><p class="mt-2 text-sm text-stone-400">Coba lihat semua pengumuman kelas.</p><button type="button" data-news-reset class="button button-secondary mt-5">Lihat semua</button></div>
+</div>

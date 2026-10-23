@@ -1,0 +1,26 @@
+<?php $label = deadline_label($task); ?>
+<article class="panel p-5 sm:p-6" data-task-card data-task-id="<?= e($task['id']) ?>" data-course="<?= e($task['course']) ?>" data-title="<?= e($task['title']) ?>" data-deadline="<?= e($task['deadline']) ?>" data-status="<?= e($task['status']) ?>">
+    <div class="flex items-start justify-between gap-3">
+        <div class="flex min-w-0 items-center gap-3">
+            <span class="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-lime-300/10 text-xs font-semibold text-lime-200"><?= e($task['code']) ?></span>
+            <div><p class="text-xs font-medium text-stone-200"><?= e($task['course']) ?></p><p class="mt-1 text-xs text-stone-400"><?= e($task['type']) ?></p></div>
+        </div>
+        <span class="tag task-deadline shrink-0" data-deadline-badge data-urgent="<?= in_array($label, ['Hari ini', 'Besok', '2 hari lagi']) ? 'true' : 'false' ?>" data-late="<?= $label === 'Terlambat' ? 'true' : 'false' ?>" data-done="<?= $task['status'] === 'done' ? 'true' : 'false' ?>"><?= e($label) ?></span>
+    </div>
+    <details class="mt-5" <?= ($_GET['task'] ?? '') === $task['id'] ? 'open' : '' ?>>
+        <summary class="flex min-h-11 items-start justify-between gap-4"><h2 class="text-lg font-semibold leading-7 tracking-tight"><?= e($task['title']) ?></h2><span class="details-arrow mt-1 shrink-0 text-stone-400 transition-transform"><?= icon('chevron', 'size-4') ?></span></summary>
+        <p class="mt-2 text-sm leading-7 text-stone-400"><?= e($task['description']) ?></p>
+        <p class="mt-3 text-xs text-stone-400">Menandai selesai mencatat progres pribadi. Pengumpulan tetap melalui LMS.</p>
+    </details>
+    <div class="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-stone-800 pt-4">
+        <p class="flex items-center gap-2 text-xs text-stone-400"><?= icon('calendar', 'size-4') ?><?= e(date_id($task['deadline'])) ?></p>
+        <div class="flex items-center gap-2">
+            <label for="status-<?= e($task['id']) ?>" class="text-xs text-stone-400">Status</label>
+            <select id="status-<?= e($task['id']) ?>" data-task-status class="min-h-11 max-w-full rounded-xl border border-stone-700 bg-stone-950 px-3 py-2 text-xs text-stone-200">
+                <?php foreach (['todo' => 'Belum dikerjakan', 'doing' => 'Sedang dikerjakan', 'done' => 'Selesai'] as $value => $label): ?>
+                    <option value="<?= e($value) ?>" <?= $task['status'] === $value ? 'selected' : '' ?>><?= e($label) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+    </div>
+</article>

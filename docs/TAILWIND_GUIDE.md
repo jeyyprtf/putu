@@ -1,5 +1,7 @@
 # Panduan Tailwind untuk PUTU
 
+> Status frontend dan acuan visual terbaru: [FRONTEND.md](FRONTEND.md). Panduan di bawah adalah rancangan awal; implementasi saat ini mengikuti palet stone–lime dan font Inter sesuai landing/login/register.
+
 Gunakan utility bawaan Tailwind CSS v4 pada markup PHP. Palet PUTU memakai **stone** untuk dasar off-white dan **emerald** untuk aksen hijau. Warna sedikit bergeser dari rancangan sebelumnya agar tim dapat memakai nama warna bawaan tanpa membuat tema warna sendiri. [Palet bawaan Tailwind](https://tailwindcss.com/docs/colors).
 
 Snippet berikut adalah acuan tampilan. Hubungkan form ke handler, session, CSRF, dan validasi server saat mengerjakan bagian backend di [panduan development](DEVELOPMENT_GUIDE.md). Jangan menyalin data dari pengguna ke HTML tanpa escaping.

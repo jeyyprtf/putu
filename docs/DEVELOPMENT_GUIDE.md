@@ -1,5 +1,7 @@
 # Panduan pembangunan PUTU dengan PHP
 
+> Status frontend dan acuan visual terbaru: [FRONTEND.md](FRONTEND.md). Panduan di bawah adalah rancangan awal; implementasi saat ini mengikuti palet stone–lime dan font Inter sesuai landing/login/register.
+
 Bangun ulang PUTU di `~/Documents/Tugas/PBL/code` dengan PHP native, MySQL melalui PDO, Tailwind CSS, dan JavaScript seperlunya. Selesaikan satu bagian beserta pengujiannya sebelum pindah ke bagian berikutnya. Aplikasi React sebelumnya menjadi referensi perilaku dan tampilan, bukan dependensi aplikasi PHP.
 
 Design guidelines tersedia di [Figma PUTU Web](https://www.figma.com/design/lfbSOjtgyALIyU41ta1h9x/PUTU---Juan-Workspace?node-id=2115-395), pada page **PUTU Web • Design Guidelines**. Tiga lembar acuannya: **Foundations**, **UI Patterns**, dan **Layout & Handoff**. Acuan implementasi tim adalah [panduan snippet Tailwind](TAILWIND_GUIDE.md): palet bawaan stone + emerald, `font-sans`, dan ukuran utility standar. Token Figma memetakan palet tersebut dalam Light/Dark; Inter di canvas menjadi representasi font sistem.

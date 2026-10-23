@@ -1,141 +1,47 @@
-
-/* Pengaturan dasar website */
-* {
-    box-sizing: border-box;
+:root { color-scheme: dark; }
+html { scroll-behavior: smooth; }
+body { margin: 0; }
+*, *::before, *::after { box-sizing: border-box; }
+button, select, summary { cursor: pointer; }
+a, button, input, select, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--color-lime-300, #bef264); outline-offset: 4px; }
+[hidden] { display: none !important; }
+.panel { border: 1px solid var(--color-stone-800, #292524); border-radius: 1.5rem; background: var(--color-stone-900, #1c1917); }
+.field { width: 100%; min-height: 3rem; border: 1px solid var(--color-stone-700, #44403c); border-radius: 1rem; background: var(--color-stone-900, #1c1917); padding: .8rem 1rem; color: var(--color-stone-100, #f5f5f4); font: inherit; font-size: .875rem; }
+.field::placeholder { color: var(--color-stone-400, #a8a29e); }
+.field:focus { border-color: var(--color-lime-300, #bef264); outline: 2px solid var(--color-lime-300, #bef264); outline-offset: 2px; }
+.field[aria-invalid="true"], .field:user-invalid { border-color: var(--color-red-300, #fca5a5); }
+.button { display: inline-flex; min-height: 2.75rem; align-items: center; justify-content: center; gap: .5rem; border-radius: 1rem; padding: .75rem 1.25rem; background: var(--color-lime-500, #84cc16); color: var(--color-lime-950, #1a2e05); font-size: .875rem; font-weight: 700; transition: background .2s; }
+.button:hover { background: var(--color-lime-300, #bef264); }
+.button-secondary { background: var(--color-stone-800, #292524); color: var(--color-stone-200, #e7e5e4); }
+.button-secondary:hover { background: var(--color-stone-700, #44403c); }
+.icon-button { display: inline-flex; width: 2.75rem; height: 2.75rem; flex-shrink: 0; align-items: center; justify-content: center; border: 1px solid var(--color-stone-800, #292524); border-radius: 50%; background: var(--color-stone-900, #1c1917); color: var(--color-stone-400, #a8a29e); }
+.icon-button:hover { color: var(--color-lime-300, #bef264); border-color: var(--color-stone-600, #57534e); }
+.eyebrow { color: var(--color-lime-300, #bef264); font-size: .65rem; line-height: 1.5; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; }
+.nav-link { display: flex; min-height: 2.75rem; align-items: center; gap: .75rem; border-radius: 999px; padding: .75rem 1rem; color: var(--color-stone-400, #a8a29e); font-size: .875rem; }
+.nav-link:hover { color: var(--color-stone-100, #f5f5f4); background: var(--color-stone-800, #292524); }
+.nav-link[aria-current="page"] { color: var(--color-lime-200, #d9f99d); background: rgb(163 230 53 / .12); font-weight: 600; }
+.filter-tab { display: inline-flex; min-height: 2.75rem; align-items: center; justify-content: center; gap: .5rem; border: 1px solid var(--color-stone-800, #292524); border-radius: 999px; padding: .6rem 1rem; background: var(--color-stone-900, #1c1917); color: var(--color-stone-400, #a8a29e); font-size: .8rem; white-space: nowrap; }
+.filter-tab:hover { border-color: var(--color-stone-600, #57534e); color: var(--color-stone-100, #f5f5f4); }
+.filter-tab[aria-pressed="true"], .filter-tab[aria-current="page"] { background: var(--color-lime-500, #84cc16); border-color: var(--color-lime-500, #84cc16); color: var(--color-lime-950, #1a2e05); font-weight: 600; }
+.tag { display: inline-flex; align-items: center; gap: .35rem; border-radius: 999px; padding: .3rem .65rem; font-size: .7rem; font-weight: 500; line-height: 1.4; }
+.task-deadline { background: rgb(163 230 53 / .1); color: var(--color-lime-200, #d9f99d); }
+.task-deadline[data-urgent="true"] { background: rgb(251 191 36 / .1); color: var(--color-amber-300, #fcd34d); }
+.task-deadline[data-late="true"] { background: rgb(248 113 113 / .1); color: var(--color-red-300, #fca5a5); }
+.task-deadline[data-done="true"] { background: rgb(163 230 53 / .1); color: var(--color-lime-300, #bef264); }
+.dock { bottom: calc(.75rem + env(safe-area-inset-bottom)); }
+.workspace-content { padding-bottom: calc(7rem + env(safe-area-inset-bottom)); }
+.auth-photo { background: linear-gradient(180deg, rgb(12 10 9 / .05) 20%, rgb(12 10 9 / .9) 100%); }
+summary { list-style: none; }
+summary::-webkit-details-marker { display: none; }
+details[open] > summary .details-arrow { transform: rotate(90deg); }
+@media (min-width: 1024px) { .workspace-content { padding-bottom: 2rem; } }
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
 
-html {
-    scroll-behavior: smooth;
-}
-
-body {
-    margin: 0;
-    font-family: "Inter", sans-serif;
-    background-color: #F7F9EF;
-    color: #1B3B2B;
-}
-
-/* Bagian Welcome di index.php */
-.welcome-section {
-    padding: 24px;
-}
-
-.welcome-section h1 {
-    margin: 0 0 10px;
-    font-size: 28px;
-    font-weight: bold;
-}
-
-.welcome-section p {
-    margin: 0;
-    color: #68766B;
-}
-
-/* Halaman login PUTULAGI */
-.login-container {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-}
-
-.login-card {
-    width: 100%;
-    max-width: 390px;
-    padding: 28px;
-    background: #FFFFFF;
-    border-radius: 24px;
-    box-shadow: 0 8px 30px rgba(27, 59, 43, 0.08);
-}
-
-.login-logo {
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 24px;
-    background: #EAF4EC;
-    color: #1B3B2B;
-    border-radius: 16px;
-}
-
-.login-card h1 {
-    margin: 0 0 12px;
-    font-size: 28px;
-    line-height: 1.25;
-    font-weight: bold;
-}
-
-.login-subtitle {
-    margin: 0 0 28px;
-    color: #68766B;
-    font-size: 14px;
-    line-height: 1.6;
-}
-
-.login-card label {
-    display: block;
-    margin-bottom: 8px;
-    font-size: 14px;
-    font-weight: 600;
-}
-
-.login-card input {
-    width: 100%;
-    padding: 14px;
-    margin-bottom: 20px;
-    border: 1px solid #DCE4DB;
-    border-radius: 12px;
-    font-size: 14px;
-    outline: none;
-}
-
-.login-card input:focus {
-    border-color: #1B3B2B;
-}
-
-.login-forgot {
-    display: block;
-    margin: -8px 0 20px;
-    text-align: right;
-    color: #1B3B2B;
-    font-size: 13px;
-    text-decoration: none;
-}
-
-.login-button {
-    width: 100%;
-    padding: 15px;
-    border: none;
-    border-radius: 12px;
-    background: #1B3B2B;
-    color: #FFFFFF;
-    font-size: 15px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.login-button:hover {
-    background: #254C38;
-}
-
-.login-register {
-    margin: 24px 0 0;
-    text-align: center;
-    color: #68766B;
-    font-size: 13px;
-}
-
-.login-register a {
-    color: #1B3B2B;
-    font-weight: bold;
-    text-decoration: none;
-}
-
-@media (max-width: 420px) {
-    .login-card {
-        padding: 24px 20px;
-    }
-}
+progress { appearance: none; border: 0; background: var(--color-stone-700); }
+progress::-webkit-progress-bar { background: var(--color-stone-700); border-radius: 999px; }
+progress::-webkit-progress-value { background: var(--color-lime-500); border-radius: 999px; }
+progress::-moz-progress-bar { background: var(--color-lime-500); border-radius: 999px; }
