@@ -9,7 +9,13 @@
 </head>
 
 <body class="font-sans antialiased min-h-screen bg-neutral-950 text-stone-100 flex items-center justify-center p-6">
-
+    <a href="../../index.php"
+        aria-label="Kembali ke beranda"
+        class="fixed top-6 left-6 w-11 h-11 flex items-center justify-center rounded-2xl border border-stone-800 bg-stone-900 text-stone-100 hover:bg-stone-800 hover:text-lime-300 transition duration-300">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 12H5m6-6-6 6 6 6"></path>
+        </svg>
+    </a> 
     <main class="w-full flex flex-col gap-4 max-w-[390px] bg-stone-900 border border-stone-800 rounded-3xl p-7 shadow-sm">
 
         <a href="../../index.php" class="">    
