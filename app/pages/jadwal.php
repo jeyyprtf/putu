@@ -15,22 +15,22 @@ require_once __DIR__ . '/../bootstrap.php';
         <?php require __DIR__ . '/../components/sidebar.php'; ?>
         <div class="lg:ml-68">
             <?php require __DIR__ . '/../components/navbar.php'; ?>
-            <main id="konten" class="workspace-content mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">
-                <section class="mb-8 flex flex-wrap items-end justify-between gap-5">
+            <main id="konten" class="workspace-content mx-auto max-w-7xl px-5 py-8 pt-4 sm:px-8 lg:px-10 lg:py-10">
+                <section class="mb-8 flex flex-wrap items-end justify-between gap-3">
                     <div>
-                        <p class="eyebrow">
+                        <!-- <p class="eyebrow">
                             Make room for learning
-                        </p>
-                        <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+                        </p> -->
+                        <h1 class="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">
                             Jadwal kuliah<span class="text-lime-300">.</span>
                         </h1>
-                        <p class="mt-3 text-sm leading-6 text-stone-400">
+                        <!-- <p class="mt-3 text-sm leading-6 text-stone-400">
                             Tahu kapan, di mana, dan bersama siapa kamu belajar.
-                        </p>
+                        </p> -->
                     </div>
                     <span class="tag border border-stone-800 bg-stone-900 text-stone-300">Semester 3 · SIB 2B</span>
                 </section>
-                <section aria-label="Ringkasan jadwal" class="mb-8 grid grid-cols-3 gap-3 sm:gap-5">
+                <!-- <section aria-label="Ringkasan jadwal" class="mb-8 gr  id grid-cols-3 gap-3 sm:gap-5">
                     <div class="panel p-4 sm:p-6">
                         <p class="text-3xl font-semibold tracking-tight">
                             <?= $scheduleCourseCount ?>
@@ -55,8 +55,8 @@ require_once __DIR__ . '/../bootstrap.php';
                             Hari kuliah
                         </p>
                     </div>
-                </section>
-                <div class="mb-5 flex flex-wrap items-center justify-between gap-4">
+                </section> -->
+                <div class="mb-3 flex  items-center justify-between gap-4">
                     <h2 class="text-lg font-semibold">
                         Agenda mingguan
                     </h2>
@@ -69,7 +69,7 @@ require_once __DIR__ . '/../bootstrap.php';
                         </button>
                     </div>
                 </div>
-                <div id="day-picker" hidden class="mb-5 flex gap-2 overflow-x-auto py-1" role="group" aria-label="Pilih hari">
+                <div id="day-picker" hidden class="mb-3 flex gap-2 overflow-x-auto py-1" role="group" aria-label="Pilih hari">
                     <?php foreach ($days as $index => $day): ?>
                         <button type="button" data-day="<?= $index ?>" aria-label="<?= e($day) ?>" aria-pressed="<?= $index === $todayIndex ? 'true' : 'false' ?>" class="filter-tab min-w-11 flex-1 shrink-0 px-2!">
                             <?= e(substr($day, 0, 3)) ?>
@@ -128,7 +128,7 @@ require_once __DIR__ . '/../bootstrap.php';
                 </div>
                 <p id="schedule-feedback" class="sr-only" role="status" aria-live="polite">
                 </p>
-                <?php require __DIR__ . '/../components/footer.php'; ?>
+          
             </main>
         </div>
         <?php require __DIR__ . '/../components/dock.php'; ?>
