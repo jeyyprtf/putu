@@ -21,24 +21,19 @@ require_once __DIR__ . '/../bootstrap.php';
                         Tugas saya<span class="text-lime-300">.</span>
                     </h1>
                 </section>
-                <div aria-label="Filter mata kuliah" role="group" class="mb-2 flex gap-2 overflow-x-auto pb-1">
-                    <button type="button" data-course-filter="" aria-pressed="true" class="filter-tab shrink-0">Semua</button>
-                    <?php foreach ($courseNames as $course): ?>
-                        <button type="button" data-course-filter="<?= e($course) ?>" aria-pressed="false" class="filter-tab shrink-0">
-                            <?= e($course) ?>
-                        </button>
-                    <?php endforeach; ?>
-                </div>
                 <div class="mb-3 flex items-center justify-between gap-2">
-                    <p id="task-result" role="status" aria-live="polite" class="min-w-0 text-xs text-stone-400">
+                    <p id="task-result" role="status" aria-live="polite" class="shrink-0 text-xs text-stone-400">
                         <?= $taskCounts['all'] ?> tugas
                     </p>
-                    <div class="flex shrink-0 gap-2">
-                        <button id="status-filter" type="button" class="filter-tab px-3!" aria-label="Status: Semua. Ganti ke belum selesai.">
+                    <div class="flex min-w-0 gap-2">
+                        <button id="course-picker" type="button" class="filter-tab min-w-0 max-w-36 px-3!" aria-haspopup="dialog" aria-controls="course-drawer" aria-expanded="false" aria-label="Mata kuliah: Semua. Pilih mata kuliah.">
+                            <span data-course-label class="truncate">Matkul</span>
+                        </button>
+                        <button id="status-filter" type="button" class="filter-tab shrink-0 px-3!" aria-label="Status: Semua. Ganti ke belum selesai.">
                             <?= icon('cycle', 'size-3.5') ?><span data-status-label>Semua</span>
                         </button>
-                        <button id="task-sort" type="button" class="filter-tab px-3!" aria-label="Urutan: Deadline terdekat. Ganti ke deadline terlama.">
-                            <?= icon('sort', 'size-3.5') ?><span data-sort-label>Terdekat</span>
+                        <button id="task-sort" type="button" class="filter-tab min-w-11 shrink-0 px-3!" aria-label="Urutan: Deadline terdekat. Ganti ke deadline terlama.">
+                            <?= icon('sort', 'size-3.5') ?><span data-sort-label class="hidden sm:inline">Terdekat</span>
                         </button>
                     </div>
                 </div>
@@ -68,6 +63,22 @@ require_once __DIR__ . '/../bootstrap.php';
                 </noscript>
             </main>
         </div>
+        <dialog id="course-drawer" class="course-drawer" aria-labelledby="course-drawer-title">
+            <div class="mb-5 flex items-center justify-between gap-3">
+                <h2 id="course-drawer-title" class="text-lg font-semibold">Mata kuliah<span class="text-lime-300">.</span></h2>
+                <form method="dialog">
+                    <button type="submit" class="icon-button" aria-label="Tutup pilihan mata kuliah" autofocus><?= icon('close') ?></button>
+                </form>
+            </div>
+            <div role="group" aria-label="Filter mata kuliah" class="flex flex-col gap-2">
+                <button type="button" data-course-filter="" aria-pressed="true" class="filter-tab justify-start! rounded-2xl! whitespace-normal! text-left">Semua mata kuliah</button>
+                <?php foreach ($courseNames as $course): ?>
+                    <button type="button" data-course-filter="<?= e($course) ?>" aria-pressed="false" class="filter-tab justify-start! rounded-2xl! whitespace-normal! text-left">
+                        <?= e($course) ?>
+                    </button>
+                <?php endforeach; ?>
+            </div>
+        </dialog>
         <?php require __DIR__ . '/../components/dock.php'; ?>
     </body>
 </html>

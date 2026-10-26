@@ -72,7 +72,15 @@
                 button.setAttribute('aria-label', label);
                 button.title = label;
             }
-            for (const pill of all('[data-course-filter]')) pill.setAttribute('aria-pressed', String(pill.dataset.courseFilter === courseFilter));
+            for (const option of all('[data-course-filter]')) option.setAttribute('aria-pressed', String(option.dataset.courseFilter === courseFilter));
+            const coursePicker = one('#course-picker');
+            if (coursePicker) {
+                coursePicker.querySelector('[data-course-label]').textContent = courseFilter || 'Matkul';
+                coursePicker.dataset.active = String(courseFilter !== '');
+                const label = `Mata kuliah: ${courseFilter || 'Semua'}. Pilih mata kuliah.`;
+                coursePicker.setAttribute('aria-label', label);
+                coursePicker.title = label;
+            }
             if (one('#task-result')) one('#task-result').textContent = `${visible} tugas`;
             if (one('#tasks-empty')) one('#tasks-empty').hidden = visible !== 0;
         };
@@ -132,6 +140,16 @@
         for (const button of all('[data-course-filter]')) button.addEventListener('click', () => {
             courseFilter = button.dataset.courseFilter;
             applyFilters();
+            one('#course-drawer').close();
+        });
+        const courseDrawer = one('#course-drawer');
+        one('#course-picker')?.addEventListener('click', () => {
+            courseDrawer.showModal();
+            one('#course-picker').setAttribute('aria-expanded', 'true');
+        });
+        courseDrawer?.addEventListener('close', () => one('#course-picker').setAttribute('aria-expanded', 'false'));
+        courseDrawer?.addEventListener('click', (event) => {
+            if (event.target === courseDrawer && event.clientX < courseDrawer.getBoundingClientRect().left) courseDrawer.close();
         });
         const sortTasks = () => {
             cards.sort((a, b) => (latestFirst ? -1 : 1) * a.dataset.deadline.localeCompare(b.dataset.deadline));

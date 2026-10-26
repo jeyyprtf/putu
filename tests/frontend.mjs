@@ -36,8 +36,15 @@ const navigate = async (page, legacy = false) => {
     throw new Error('Page not ready: ' + page);
 };
 const visibleCount = (selector) => evaluate(`[...document.querySelectorAll(${JSON.stringify(selector)})].filter(e => !e.hidden).length`);
-const click = (selector) => evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
+const click = (selector) => evaluate(`(() => { const element = document.querySelector(${JSON.stringify(selector)}); element.focus(); element.click(); })()`);
 const change = (selector, value) => evaluate(`(() => { const e = document.querySelector(${JSON.stringify(selector)}); e.value = ${JSON.stringify(value)}; e.dispatchEvent(new Event('change', {bubbles:true})); })()`);
+const chooseCourse = async (course) => {
+    await click('#course-picker');
+    assert.equal(await evaluate('document.querySelector("#course-drawer").open'), true);
+    await click(`[data-course-filter=${JSON.stringify(course)}]`);
+    assert.equal(await evaluate('document.querySelector("#course-drawer").open'), false);
+    assert.equal(await evaluate('document.activeElement.id'), 'course-picker');
+};
 try {
     await send('Page.enable'); await send('Runtime.enable');
     await navigate('tugas');
@@ -45,6 +52,23 @@ try {
     assert.equal(await visibleCount('[data-task-card]'), 6);
     assert.equal(await evaluate('document.querySelector("#task-result").textContent'), '6 tugas');
     assert.equal(await evaluate('document.querySelector("footer")'), null);
+    await click('#course-picker');
+    assert.equal(await evaluate('document.querySelector("#course-picker").getAttribute("aria-expanded")'), 'true');
+    assert.equal(await evaluate('getComputedStyle(document.documentElement).overflow'), 'hidden');
+    await click('#course-drawer form button');
+    await wait(50);
+    assert.equal(await evaluate('document.querySelector("#course-picker").getAttribute("aria-expanded")'), 'false');
+    assert.equal(await evaluate('document.activeElement.id'), 'course-picker');
+    await click('#course-picker');
+    await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+    await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+    await wait(50);
+    assert.equal(await evaluate('document.querySelector("#course-drawer").open'), false, 'Escape dismisses the drawer');
+    await click('#course-picker');
+    await wait(250);
+    await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: 1, y: 200, button: 'left', clickCount: 1 });
+    await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: 1, y: 200, button: 'left', clickCount: 1 });
+    assert.equal(await evaluate('document.querySelector("#course-drawer").open'), false, 'Backdrop dismisses the drawer');
     await click('#status-filter');
     assert.equal(await visibleCount('[data-task-card]'), 5);
     assert.equal(await evaluate('document.querySelector("[data-task-id=stack]").hidden'), false, 'Ongoing tasks are unfinished');
@@ -57,16 +81,17 @@ try {
     assert.equal(await visibleCount('[data-task-card]'), 4);
     await click('#status-filter');
     assert.equal(await visibleCount('[data-task-card]'), 2);
-    await click('[data-course-filter="Sistem Operasi"]');
+    await chooseCourse('Sistem Operasi');
     assert.equal(await visibleCount('[data-task-card]'), 0);
     assert.equal(await evaluate('document.querySelector("#tasks-empty").hidden'), false);
     await click('[data-reset-filters]');
     assert.equal(await evaluate('document.querySelector("#status-filter").dataset.status'), 'all');
     assert.equal(await evaluate('document.querySelector("[data-course-filter][aria-pressed=true]").dataset.courseFilter'), '');
     assert.equal(await visibleCount('[data-task-card]'), 6);
-    await click('[data-course-filter="Basis Data"]');
+    await chooseCourse('Basis Data');
     assert.equal(await visibleCount('[data-task-card]'), 2);
-    await click('[data-course-filter=""]');
+    assert.equal(await evaluate('document.querySelector("[data-course-label]").textContent'), 'Basis Data');
+    await chooseCourse('');
     const deadlines = () => evaluate('[...document.querySelectorAll("[data-task-card]")].map(card => card.dataset.deadline)');
     const nearestFirst = await deadlines();
     assert.deepEqual(nearestFirst, [...nearestFirst].sort());
@@ -124,9 +149,15 @@ try {
             await send('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 1, mobile: width < 768 });
             await wait(80);
             assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true, `${page} overflow at ${width}px`);
-            if (page === 'tugas' && width < 640) {
-                assert.equal(await evaluate('(() => { const row = document.querySelector("[data-course-filter]").parentElement; row.scrollLeft = row.scrollWidth; return row.scrollLeft > 0; })()'), true, 'Course pills scroll on mobile');
-                assert.equal(await evaluate('[...document.querySelectorAll("#status-filter, #task-sort, [data-course-filter]")].every(button => button.offsetHeight >= 44)'), true, 'Touch targets stay at least 44px');
+            if (page === 'tugas') {
+                await chooseCourse('Algoritma & Struktur Data');
+                assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true, 'Long course names fit the toolbar');
+                assert.equal(await evaluate('[...document.querySelectorAll("#status-filter, #task-sort, #course-picker")].every(button => button.offsetHeight >= 44 && button.offsetWidth >= 44)'), true, 'Toolbar touch targets stay at least 44px');
+                await click('#course-picker');
+                await wait(250);
+                assert.equal(await evaluate('(() => { const panel = document.querySelector("#course-drawer"); const rect = panel.getBoundingClientRect(); return Math.abs(rect.right - innerWidth) < 1 && rect.top === 0 && rect.height === innerHeight && panel.scrollWidth <= panel.clientWidth; })()'), true, `Drawer fits right edge at ${width}px`);
+                assert.equal(await evaluate('[...document.querySelectorAll("[data-course-filter]")].every(button => button.offsetHeight >= 44)'), true, 'Course touch targets stay at least 44px');
+                await click('#course-drawer form button');
             }
         }
     }
