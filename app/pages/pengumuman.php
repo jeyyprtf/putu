@@ -34,29 +34,29 @@ require_once __DIR__ . '/../bootstrap.php';
                         </button>
                     </div>
                 </div>
-                <div class="max-w-4xl space-y-5 sm:space-y-4">
+                <div class="max-w-4xl space-y-3 sm:space-y-4">
                     <?php foreach ($announcements as $news): ?>
-                        <article class="panel p-5 sm:p-7" data-news-card data-important="<?= $news['important'] ? 'true' : 'false' ?>" id="news-<?= e($news['id']) ?>">
+                        <article class="panel p-4 sm:p-7" data-news-card data-important="<?= $news['important'] ? 'true' : 'false' ?>" id="news-<?= e($news['id']) ?>">
                             <div class="flex flex-wrap items-center gap-2">
                                 <?php if ($news['important']): ?>
                                     <span class="tag bg-amber-300/10 text-amber-200"><?= icon('bell', 'size-3') ?>Penting</span>
                                 <?php endif; ?>
                                 <span class="ml-auto text-xs text-stone-400"><?= e(date_id($news['date'])) ?></span>
                             </div>
-                            <h2 class="mt-5 text-xl font-semibold leading-8 tracking-tight">
+                            <h2 class="mt-2 text-xl font-semibold leading-7 tracking-tight sm:mt-5 sm:leading-8">
                                 <?= e($news['title']) ?>
                             </h2>
-                            <p class="mt-2 text-xs text-stone-400">
+                            <p class="mt-1 text-xs text-stone-400 sm:mt-2">
                                 Oleh <?= e($news['author']) ?>
                             </p>
-                            <p class="mt-4 text-sm leading-7 text-stone-400">
+                            <p class="mt-2 text-sm leading-6 text-stone-400 sm:mt-4 sm:leading-7">
                                 <?= e($news['summary']) ?>
                             </p>
-                            <details class="mt-4" <?= ($_GET['id'] ?? '') === $news['id'] ? 'open' : '' ?>>
+                            <details class="mt-1 sm:mt-4" <?= ($_GET['id'] ?? '') === $news['id'] ? 'open' : '' ?>>
                                 <summary class="flex min-h-11 w-fit items-center gap-2 text-xs font-semibold text-lime-300">
                                     Baca selengkapnya<span class="details-arrow transition-transform"><?= icon('chevron', 'size-3') ?></span>
                                 </summary>
-                                <div class="mt-3 border-t border-stone-800 pt-4 text-sm leading-8 text-stone-300">
+                                <div class="mt-2 border-t border-stone-800 pt-3 text-sm leading-6 text-stone-300 sm:mt-3 sm:pt-4 sm:leading-8">
                                     <?= e($news['body']) ?>
                                 </div>
                             </details>
