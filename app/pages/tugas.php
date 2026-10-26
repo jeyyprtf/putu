@@ -17,15 +17,9 @@ require_once __DIR__ . '/../bootstrap.php';
             <?php require __DIR__ . '/../components/navbar.php'; ?>
             <main id="konten" class="workspace-content mx-auto max-w-7xl px-5 py-8 pt-4 sm:px-8 sm:pt-8 lg:px-10 lg:py-10 lg:pt-10">
                 <section class="mb-8">
-                    <p class="eyebrow">
-                        One thing at a time
-                    </p>
                     <h1 class="mt-1 text-3xl font-semibold tracking-tight sm:mt-3 sm:text-4xl">
                         Tugas saya<span class="text-lime-300">.</span>
                     </h1>
-                    <p class="mt-2 text-sm leading-6 text-stone-400 sm:mt-3">
-                        Lihat prioritasmu, mulai kerjakan, dan rayakan yang selesai.
-                    </p>
                 </section>
                 <section aria-label="Filter tugas" class="space-y-3 sm:space-y-5">
                     <div class="flex flex-wrap gap-2" role="group" aria-label="Status tugas">
@@ -108,7 +102,6 @@ require_once __DIR__ . '/../bootstrap.php';
                         Aktifkan JavaScript untuk mencoba filter dan perubahan status. Detail tugas tetap dapat dibuka.
                     </p>
                 </noscript>
-                <?php require __DIR__ . '/../components/footer.php'; ?>
             </main>
         </div>
         <?php require __DIR__ . '/../components/dock.php'; ?>
