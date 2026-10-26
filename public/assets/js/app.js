@@ -56,6 +56,7 @@
         let courseFilter = '';
         let latestFirst = false;
         const cards = all('[data-task-card]');
+        const deadlineRows = all('[data-priority-task]');
         const applyFilters = () => {
             let visible = 0;
             for (const card of cards) {
@@ -85,7 +86,7 @@
             if (one('#tasks-empty')) one('#tasks-empty').hidden = visible !== 0;
         };
         const refresh = () => {
-            const counts = { all: tasks.length, active: 0, priority: 0, todo: 0, doing: 0, done: 0 };
+            const counts = { all: tasks.length, active: 0, priority: 0, calm: 0, todo: 0, doing: 0, done: 0 };
             for (const task of tasks) {
                 counts[statuses[task.id]]++;
                 if (statuses[task.id] !== 'done') {
@@ -96,26 +97,30 @@
                 if (card) {
                     card.dataset.status = statuses[task.id];
                     card.querySelector('[data-task-status]').value = statuses[task.id];
-                    const badge = card.querySelector('[data-deadline-badge]');
+                }
+                const row = deadlineRows.find((row) => row.dataset.priorityTask === task.id);
+                for (const item of [card, row]) {
+                    const badge = item?.querySelector('[data-deadline-badge]');
+                    if (!badge) continue;
                     badge.textContent = deadlineLabel(task);
                     badge.dataset.urgent = String(daysLeft(task) >= 0 && daysLeft(task) <= 2);
                     badge.dataset.late = String(daysLeft(task) < 0);
                     badge.dataset.done = String(statuses[task.id] === 'done');
                 }
             }
+            counts.calm = counts.active - counts.priority;
             for (const node of all('[data-count]')) {
-                const count = counts[node.dataset.count];
-                node.textContent = node.closest('[aria-label="Ringkasan tugas"]') ? String(count).padStart(2, '0') : String(count);
+                node.textContent = String(counts[node.dataset.count]);
             }
-            const percent = Math.round(counts.done / tasks.length * 100);
+            const percent = tasks.length ? Math.round(counts.done / tasks.length * 100) : 0;
             if (one('[data-progress-percent]')) one('[data-progress-percent]').textContent = `${percent}%`;
             if (one('[data-progress]')) {
                 one('[data-progress]').value = counts.done;
                 one('[data-progress]').textContent = `${percent}%`;
             }
             let shown = 0;
-            for (const row of all('[data-priority-task]')) {
-                row.hidden = statuses[row.dataset.priorityTask] === 'done' || shown >= 4;
+            for (const row of deadlineRows) {
+                row.hidden = statuses[row.dataset.priorityTask] === 'done' || shown >= 3;
                 if (!row.hidden) shown++;
             }
             if (one('#priorities-empty')) one('#priorities-empty').hidden = counts.active !== 0;

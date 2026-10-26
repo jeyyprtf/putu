@@ -45,6 +45,7 @@ const chooseCourse = async (course) => {
     assert.equal(await evaluate('document.querySelector("#course-drawer").open'), false);
     assert.equal(await evaluate('document.activeElement.id'), 'course-picker');
 };
+const dashboardCounts = () => evaluate('[...document.querySelector("[data-count=calm]").closest("section").querySelectorAll("[data-count]")].map(node => node.textContent)');
 try {
     await send('Page.enable'); await send('Runtime.enable');
     await navigate('tugas');
@@ -103,7 +104,19 @@ try {
     assert.equal(await evaluate('document.querySelector("[data-task-id=stack] details").open'), true);
     await navigate('dashboard');
     assert.equal(await evaluate('document.querySelector("[data-progress-percent]").textContent'), '33%');
-    assert.equal(await evaluate('document.querySelector("[data-count=active]").textContent'), '4');
+    assert.deepEqual(await dashboardCounts(), ['4', '1', '3']);
+    assert.deepEqual(await evaluate('[...document.querySelectorAll("main h2")].map(node => node.textContent)'), ['Progres tugas', 'Total tugas', 'Jadwal hari ini', 'Agenda hari ini', 'Deadline terdekat']);
+    assert.equal(await evaluate('document.querySelector("footer")'), null);
+    assert.deepEqual(await evaluate('[...document.querySelectorAll("[data-priority-task]:not([hidden])")].map(row => row.dataset.priorityTask)'), ['stack', 'checkout', 'matriks']);
+    assert.equal(await evaluate('Number(document.querySelector("[data-today-class-count]").textContent) === document.querySelectorAll("[data-today-class]").length'), true);
+    const savedProgress = await evaluate('sessionStorage.getItem(`putu-preview:${document.querySelector("#task-data").dataset.storagePath}:${document.querySelector("#task-data").dataset.today}`)');
+    await evaluate('(() => { const data = document.querySelector("#task-data"); sessionStorage.setItem(`putu-preview:${data.dataset.storagePath}:${data.dataset.today}`, JSON.stringify(Object.fromEntries(JSON.parse(data.textContent).map(task => [task.id, "done"])))); })()');
+    await navigate('dashboard');
+    assert.equal(await evaluate('document.querySelector("[data-progress-percent]").textContent'), '100%');
+    assert.deepEqual(await dashboardCounts(), ['0', '0', '0']);
+    assert.equal(await visibleCount('[data-priority-task]'), 0);
+    assert.equal(await evaluate('document.querySelector("#priorities-empty").hidden'), false);
+    await evaluate(`(() => { const data = document.querySelector('#task-data'); sessionStorage.setItem(\`putu-preview:\${data.dataset.storagePath}:\${data.dataset.today}\`, ${JSON.stringify(savedProgress)}); })()`);
     await navigate('dashboard', true);
     assert.equal(await evaluate('document.querySelector("[data-progress-percent]").textContent'), '33%');
     await navigate('tugas&status=done');
@@ -112,6 +125,10 @@ try {
     await change('[data-task-id="erd"] [data-task-status]', 'todo');
     assert.equal(await evaluate('document.querySelector("[data-task-id=erd] [data-deadline-badge]").textContent'), 'Terlambat');
     assert.equal(await visibleCount('[data-task-card]'), 1);
+    await navigate('dashboard');
+    assert.deepEqual(await dashboardCounts(), ['5', '2', '3']);
+    assert.deepEqual(await evaluate('[...document.querySelectorAll("[data-priority-task]:not([hidden])")].map(row => row.dataset.priorityTask)'), ['erd', 'stack', 'checkout']);
+    assert.equal(await evaluate('document.querySelector("[data-priority-task=erd] [data-deadline-badge]").textContent'), 'Terlambat');
     for (const status of ['todo', 'doing', 'unfinished']) {
         await navigate(`tugas&status=${status}`);
         assert.equal(await evaluate('document.querySelector("#status-filter").dataset.status'), 'unfinished');
@@ -161,6 +178,13 @@ try {
             }
         }
     }
+    const appScript = await (await fetch(base + '/public/assets/js/app.js')).text();
+    const emptyDashboard = '<script id="task-data" type="application/json" data-today="2026-10-26" data-storage-path="/empty">[]</script><section><span data-count="active"></span><span data-count="priority"></span><span data-count="calm"></span></section><span data-progress-percent></span><progress data-progress max="1"></progress><p id="priorities-empty" hidden></p>';
+    await evaluate(`document.querySelector('#task-data')?.remove(); document.body.innerHTML = ${JSON.stringify(emptyDashboard)}`);
+    await evaluate(appScript);
+    assert.deepEqual(await dashboardCounts(), ['0', '0', '0']);
+    assert.equal(await evaluate('document.querySelector("[data-progress-percent]").textContent'), '0%');
+    assert.equal(await evaluate('document.querySelector("#priorities-empty").hidden'), false);
     assert.deepEqual(exceptions, [], 'Browser JavaScript errors');
     console.log('PASS: filters, sorting, details, preview progress, schedule, auth controls, and 35 viewport checks.');
 } finally {

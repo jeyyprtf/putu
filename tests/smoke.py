@@ -31,6 +31,10 @@ for page in ['', 'login', 'register', 'dashboard', 'tugas', 'jadwal', 'pengumuma
         assert len({task['id'] for task in data}) == len(data)
         assert all(task['status'] in ['todo', 'doing', 'done'] for task in data)
         assert sum(task['status'] == 'done' for task in data) == 1
+        rows = re.findall(r'<a[^>]+data-priority-task="([^"]+)"([^>]*)>', html)
+        expected = [task['id'] for task in sorted(data, key=lambda task: task['deadline']) if task['status'] != 'done'][:3]
+        assert [task_id for task_id, attributes in rows if 'hidden' not in attributes] == expected
+        assert '<footer' not in html and 'Kabar dari kelas' not in html
     if page in ['login', 'register']:
         assert 'name="email"' in html and 'name="password"' in html
         assert 'Sign in with' not in html

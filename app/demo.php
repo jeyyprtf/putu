@@ -183,9 +183,12 @@ foreach ($tasks as $task) {
         }
     }
 }
+$taskCounts['calm'] = $taskCounts['active'] - $taskCounts['priority'];
 $percent = $taskCounts['all'] > 0 ? (int) round($taskCounts['done'] / $taskCounts['all'] * 100) : 0;
 $courseNames = array_unique(array_column($tasks, 'course'));
-$dashboardAnnouncements = array_slice($announcements, 0, 2);
+$deadlineTasks = $tasks;
+usort($deadlineTasks, fn ($a, $b) => strcmp($a['deadline'], $b['deadline']));
+$nearestTaskIds = array_column(array_slice(array_filter($deadlineTasks, fn ($task) => $task['status'] !== 'done'), 0, 3), 'id');
 
 $classesByDay = array_fill(0, 7, []);
 foreach ($schedules as $class) {

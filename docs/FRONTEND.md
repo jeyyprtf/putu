@@ -26,7 +26,7 @@ Buka `http://127.0.0.1:8000/`. Tiap halaman dapat dibuka langsung, misalnya `htt
 | Interaksi browser | `public/assets/js/app.js` |
 | Data contoh dan hitungan | `app/demo.php` |
 
-Tiap file halaman berisi dokumen HTML lengkap: `<html>`, `<head>`, `<body>`, dan isi halaman. Tidak ada folder `layouts` yang membungkus halaman secara tersembunyi. Empat indikator dashboard ditulis sebagai empat blok HTML biasa, sehingga label, warna, dan ukuran angka bisa diedit langsung.
+Tiap file halaman berisi dokumen HTML lengkap: `<html>`, `<head>`, `<body>`, dan isi halaman. Tidak ada folder `layouts` yang membungkus halaman secara tersembunyi. Dashboard berisi progres singkat, ringkasan tugas aktif (mendesak ≤2 hari atau terlambat, sisanya santai), jumlah jadwal hari ini, agenda, dan maksimal tiga deadline terdekat. Semua tetap berupa blok HTML biasa agar mudah diedit.
 
 ## PHP yang perlu dipahami saat mengedit tampilan
 
