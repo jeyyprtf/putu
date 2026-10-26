@@ -57,8 +57,8 @@
                 card.hidden = (statusFilter !== 'all' && statuses[card.dataset.taskId] !== statusFilter) || (course !== '' && card.dataset.course !== course);
                 if (!card.hidden) visible++;
             }
-            for (const button of all('[data-status-filter]')) button.setAttribute('aria-pressed', String(button.dataset.statusFilter === statusFilter));
-            if (one('#task-result')) one('#task-result').textContent = `${visible} tugas ditampilkan`;
+            if (one('#status-filter')) one('#status-filter').value = statusFilter;
+            if (one('#task-result')) one('#task-result').textContent = `${visible} tugas`;
             if (one('#tasks-empty')) one('#tasks-empty').hidden = visible !== 0;
         };
         const refresh = () => {
@@ -110,8 +110,8 @@
                 one('#task-feedback').textContent = message;
             });
         }
-        for (const button of all('[data-status-filter]')) button.addEventListener('click', () => {
-            statusFilter = button.dataset.statusFilter;
+        one('#status-filter')?.addEventListener('change', (event) => {
+            statusFilter = event.target.value;
             applyFilters();
         });
         one('#course-filter')?.addEventListener('change', applyFilters);

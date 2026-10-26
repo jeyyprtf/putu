@@ -16,27 +16,30 @@ require_once __DIR__ . '/../bootstrap.php';
         <div class="lg:ml-68">
             <?php require __DIR__ . '/../components/navbar.php'; ?>
             <main id="konten" class="workspace-content mx-auto max-w-7xl px-5 py-8 pt-4 sm:px-8 sm:pt-8 lg:px-10 lg:py-10 lg:pt-10">
-                <section class="mb-8">
-                    <h1 class="mt-1 text-3xl font-semibold tracking-tight sm:mt-3 sm:text-4xl">
+                <section class="mb-4">
+                    <h1 class="mt-1 text-3xl font-semibold tracking-tight sm:mt-0 sm:text-4xl">
                         Tugas saya<span class="text-lime-300">.</span>
                     </h1>
                 </section>
-                <section aria-label="Filter tugas" class="space-y-3 sm:space-y-5">
-                    <div class="flex flex-wrap gap-2" role="group" aria-label="Status tugas">
-                        <button type="button" class="filter-tab" data-status-filter="all" aria-pressed="true">
-                            Semua tugas<span data-count="all" class="text-xs opacity-70"><?= $taskCounts['all'] ?></span>
-                        </button>
-                        <button type="button" class="filter-tab" data-status-filter="todo" aria-pressed="false">
-                            Belum dikerjakan<span data-count="todo" class="text-xs opacity-70"><?= $taskCounts['todo'] ?></span>
-                        </button>
-                        <button type="button" class="filter-tab" data-status-filter="doing" aria-pressed="false">
-                            Sedang dikerjakan<span data-count="doing" class="text-xs opacity-70"><?= $taskCounts['doing'] ?></span>
-                        </button>
-                        <button type="button" class="filter-tab" data-status-filter="done" aria-pressed="false">
-                            Selesai<span data-count="done" class="text-xs opacity-70"><?= $taskCounts['done'] ?></span>
-                        </button>
+                <div class="mb-1 flex items-center justify-between gap-3">
+                    <p id="task-result" role="status" aria-live="polite" class="min-w-0 text-xs text-stone-400">
+                        <?= $taskCounts['all'] ?> tugas
+                    </p>
+                    <div>
+                        <label for="status-filter" class="sr-only">Filter status tugas</label>
+                        <select id="status-filter" class="min-h-11 max-w-full rounded-full border border-stone-800 bg-stone-900 px-4 text-xs text-stone-200">
+                            <option value="all">Semua status</option>
+                            <option value="todo">Belum dikerjakan</option>
+                            <option value="doing">Sedang dikerjakan</option>
+                            <option value="done">Selesai</option>
+                        </select>
                     </div>
-                    <div class="grid gap-3 sm:grid-cols-2 lg:max-w-2xl">
+                </div>
+                <details data-task-filters class="mb-3">
+                    <summary class="ml-auto flex min-h-11 w-fit items-center gap-2 text-xs text-stone-400 hover:text-lime-200">
+                        Mata kuliah & urutan<span class="details-arrow transition-transform"><?= icon('chevron', 'size-3') ?></span>
+                    </summary>
+                    <div class="mt-2 grid gap-3 sm:grid-cols-2 lg:max-w-2xl">
                         <div>
                             <label for="course-filter" class="mb-2 block text-xs text-stone-400">
                                 Mata kuliah
@@ -69,21 +72,13 @@ require_once __DIR__ . '/../bootstrap.php';
                             </select>
                         </div>
                     </div>
-                </section>
-                <div class="mt-3 mb-3 flex flex-wrap items-center justify-between gap-3 text-xs text-stone-400 sm:mt-7 sm:mb-4">
-                    <p id="task-result" role="status" aria-live="polite">
-                        <?= $taskCounts['all'] ?> tugas ditampilkan
-                    </p>
-                    <p>
-                        Tugas dibagikan oleh admin kelas
-                    </p>
-                </div>
-                <section id="task-list" aria-label="Daftar tugas" class="grid items-start gap-5 sm:gap-4 xl:grid-cols-2">
+                </details>
+                <section id="task-list" aria-label="Daftar tugas" class="grid items-start gap-3 sm:gap-4 xl:grid-cols-2">
                     <?php foreach ($tasks as $task): ?>
                         <?php require __DIR__ . '/../components/task-card.php'; ?>
                     <?php endforeach; ?>
                 </section>
-                <div id="tasks-empty" hidden class="panel px-6 py-14 text-center">
+                <div id="tasks-empty" hidden class="panel px-4 py-8 text-center sm:px-6 sm:py-14">
                     <span class="mx-auto flex size-12 items-center justify-center rounded-2xl bg-lime-300/10 text-lime-300"><?= icon('tasks') ?></span>
                     <h2 class="mt-4 text-lg font-semibold">
                         Belum ada tugas di sini.
@@ -95,7 +90,7 @@ require_once __DIR__ . '/../bootstrap.php';
                         Reset filter
                     </button>
                 </div>
-                <p id="task-feedback" role="status" aria-live="polite" class="mt-4 text-xs leading-6 text-lime-200">
+                <p id="task-feedback" role="status" aria-live="polite" class="mt-3 text-xs leading-6 text-lime-200">
                 </p>
                 <noscript>
                     <p class="mt-5 text-sm text-amber-200">
