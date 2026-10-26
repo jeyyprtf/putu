@@ -10,8 +10,20 @@ $percent = (int) round($done / count($tasks) * 100);
     <span class="tag border border-stone-800 bg-stone-900 text-stone-300"><?= icon('check', 'size-3') ?>Satu langkah setiap hari</span>
 </section>
 <section aria-label="Ringkasan tugas" class="mb-8 grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-4">
-    <?php foreach ([['active', 'Tugas aktif', $active, 'tasks', 'Sedikit demi sedikit, pasti bisa.'], ['priority', 'Perlu diprioritaskan', $priority, 'clock', 'Deadline dalam 2 hari atau lewat.'], ['doing', 'Sedang dikerjakan', $doing, 'arrow', 'Lanjutkan langkah baikmu.'], ['done', 'Sudah selesai', $done, 'check', 'Satu langkah lebih dekat.']] as [$key, $label, $value, $glyph, $caption]): ?>
-        <div class="panel p-4 sm:p-5"><div class="flex items-start justify-between gap-2"><p class="text-xs leading-5 text-stone-400"><?= e($label) ?></p><span class="shrink-0 text-lime-300/70"><?= icon($glyph, 'size-4') ?></span></div><p class="mt-5 text-4xl font-semibold tracking-tight" data-count="<?= e($key) ?>"><?= sprintf('%02d', $value) ?></p><p class="mt-3 text-[11px] leading-5 text-stone-400"><?= e($caption) ?></p></div>
+    <?php foreach ([
+        ['active', 'Tugas aktif', $active, 'book', 'Sedikit demi sedikit, pasti bisa.', 'text-stone-100', 'bg-stone-800 text-stone-300'],
+        ['priority', 'Perlu diprioritaskan', $priority, 'clock', 'Deadline dalam 2 hari atau lewat.', 'text-amber-300', 'bg-amber-300/10 text-amber-300'],
+        ['doing', 'Sedang dikerjakan', $doing, 'arrow', 'Lanjutkan langkah baikmu.', 'text-blue-300', 'bg-blue-300/10 text-blue-300'],
+        ['done', 'Sudah selesai', $done, 'check', 'Satu langkah lebih dekat.', 'text-lime-300', 'bg-lime-300/10 text-lime-300'],
+    ] as [$key, $label, $value, $glyph, $caption, $numberColor, $iconColor]): ?>
+        <div class="panel p-4 sm:p-5">
+            <div class="flex min-h-10 items-start justify-between gap-2">
+                <p class="text-xs leading-5 text-stone-400"><?= e($label) ?></p>
+                <span class="flex size-8 shrink-0 items-center justify-center rounded-xl <?= e($iconColor) ?>"><?= icon($glyph, 'size-4') ?></span>
+            </div>
+            <p class="mt-4 text-5xl font-semibold tracking-tight sm:text-4xl <?= e($numberColor) ?>" data-count="<?= e($key) ?>"><?= sprintf('%02d', $value) ?></p>
+            <p class="mt-3 text-[11px] leading-5 text-stone-400"><?= e($caption) ?></p>
+        </div>
     <?php endforeach; ?>
 </section>
 <div class="grid items-start gap-6 xl:grid-cols-3">
