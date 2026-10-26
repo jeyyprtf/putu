@@ -40,7 +40,10 @@ for page in ['unknown', '../app/helpers.php', ['dashboard']]:
     assert get('/index.php?' + query)[0] == 404
 
 for page in ['home', 'login', 'register', 'dashboard', 'tugas', 'jadwal', 'pengumuman']:
-    code, html = get('/app/pages/' + page + '.php')
+    path = '/app/pages/' + page + '.php'
+    with urllib.request.urlopen(base + path, timeout=10) as response:
+        assert response.geturl() == base + path, ('Direct page redirected', page)
+    code, html = get(path)
     assert code == 200 and html.lower().count('<!doctype html>') == 1
     assert 'Warning:' not in html
     assert 'http-equiv="refresh"' not in html

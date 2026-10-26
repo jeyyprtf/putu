@@ -74,10 +74,15 @@ try {
     await click('[data-schedule-view="weekly"]');
     assert.equal(await visibleCount('[data-schedule-day]'), 7);
     await navigate('pengumuman');
+    assert.deepEqual(await evaluate('[...document.querySelectorAll("[data-news-filter]")].map(button => button.dataset.newsFilter)'), ['Semua', 'Penting']);
+    assert.equal(await evaluate('document.querySelector("footer")'), null);
+    assert.equal(await evaluate('document.body.innerText.includes("Stay in the loop") || document.body.innerText.includes("Informasi penting punya tempatnya sendiri.")'), false);
     await click('[data-news-filter="Penting"]');
     assert.equal(await visibleCount('[data-news-card]'), 1);
     await click('[data-news-card]:not([hidden]) summary');
     assert.equal(await evaluate('document.querySelector("[data-news-card]:not([hidden]) details").open'), true);
+    await click('[data-news-filter="Semua"]');
+    assert.equal(await visibleCount('[data-news-card]'), 3);
     await navigate('login');
     await click('[data-password-toggle]');
     assert.equal(await evaluate('document.querySelector("#password").type'), 'text');

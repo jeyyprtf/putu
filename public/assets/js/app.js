@@ -148,7 +148,7 @@
     const filterNews = (category) => {
         let visible = 0;
         for (const card of all('[data-news-card]')) {
-            card.hidden = !(category === 'Semua' || card.dataset.category === category || (category === 'Penting' && card.dataset.important === 'true'));
+            card.hidden = category === 'Penting' && card.dataset.important !== 'true';
             if (!card.hidden) visible++;
         }
         for (const button of all('[data-news-filter]')) button.setAttribute('aria-pressed', String(button.dataset.newsFilter === category));
