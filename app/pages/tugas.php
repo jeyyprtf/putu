@@ -15,19 +15,19 @@ require_once __DIR__ . '/../bootstrap.php';
         <?php require __DIR__ . '/../components/sidebar.php'; ?>
         <div class="lg:ml-68">
             <?php require __DIR__ . '/../components/navbar.php'; ?>
-            <main id="konten" class="workspace-content mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">
+            <main id="konten" class="workspace-content mx-auto max-w-7xl px-5 py-8 pt-4 sm:px-8 sm:pt-8 lg:px-10 lg:py-10 lg:pt-10">
                 <section class="mb-8">
                     <p class="eyebrow">
                         One thing at a time
                     </p>
-                    <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+                    <h1 class="mt-1 text-3xl font-semibold tracking-tight sm:mt-3 sm:text-4xl">
                         Tugas saya<span class="text-lime-300">.</span>
                     </h1>
-                    <p class="mt-3 text-sm leading-6 text-stone-400">
+                    <p class="mt-2 text-sm leading-6 text-stone-400 sm:mt-3">
                         Lihat prioritasmu, mulai kerjakan, dan rayakan yang selesai.
                     </p>
                 </section>
-                <section aria-label="Filter tugas" class="space-y-5">
+                <section aria-label="Filter tugas" class="space-y-3 sm:space-y-5">
                     <div class="flex flex-wrap gap-2" role="group" aria-label="Status tugas">
                         <button type="button" class="filter-tab" data-status-filter="all" aria-pressed="true">
                             Semua tugas<span data-count="all" class="text-xs opacity-70"><?= $taskCounts['all'] ?></span>
@@ -76,7 +76,7 @@ require_once __DIR__ . '/../bootstrap.php';
                         </div>
                     </div>
                 </section>
-                <div class="mt-7 mb-4 flex flex-wrap items-center justify-between gap-3 text-xs text-stone-400">
+                <div class="mt-3 mb-3 flex flex-wrap items-center justify-between gap-3 text-xs text-stone-400 sm:mt-7 sm:mb-4">
                     <p id="task-result" role="status" aria-live="polite">
                         <?= $taskCounts['all'] ?> tugas ditampilkan
                     </p>
@@ -84,7 +84,7 @@ require_once __DIR__ . '/../bootstrap.php';
                         Tugas dibagikan oleh admin kelas
                     </p>
                 </div>
-                <section id="task-list" aria-label="Daftar tugas" class="grid items-start gap-4 xl:grid-cols-2">
+                <section id="task-list" aria-label="Daftar tugas" class="grid items-start gap-5 sm:gap-4 xl:grid-cols-2">
                     <?php foreach ($tasks as $task): ?>
                         <?php require __DIR__ . '/../components/task-card.php'; ?>
                     <?php endforeach; ?>

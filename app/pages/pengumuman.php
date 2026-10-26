@@ -15,13 +15,13 @@ require_once __DIR__ . '/../bootstrap.php';
         <?php require __DIR__ . '/../components/sidebar.php'; ?>
         <div class="lg:ml-68">
             <?php require __DIR__ . '/../components/navbar.php'; ?>
-            <main id="konten" class="workspace-content mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">
+            <main id="konten" class="workspace-content mx-auto max-w-7xl px-5 py-8 pt-4 sm:px-8 sm:pt-8 lg:px-10 lg:py-10 lg:pt-10">
                 <section class="mb-8">
-                    <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">
+                    <h1 class="mt-1 text-3xl font-semibold tracking-tight sm:mt-0 sm:text-4xl">
                         Kabar kelas<span class="text-lime-300">.</span>
                     </h1>
                 </section>
-                <div class="mb-6 flex flex-wrap gap-2" role="group" aria-label="Kategori pengumuman">
+                <div class="mb-3 flex flex-wrap gap-2 sm:mb-6" role="group" aria-label="Kategori pengumuman">
                     <button type="button" data-news-filter="Semua" aria-pressed="true" class="filter-tab">
                         Semua
                     </button>
@@ -29,10 +29,10 @@ require_once __DIR__ . '/../bootstrap.php';
                         Penting
                     </button>
                 </div>
-                <p id="news-result" role="status" aria-live="polite" class="mb-4 text-xs text-stone-400">
+                <p id="news-result" role="status" aria-live="polite" class="mb-3 text-xs text-stone-400 sm:mb-4">
                     <?= count($announcements) ?> pengumuman
                 </p>
-                <div class="max-w-4xl space-y-4">
+                <div class="max-w-4xl space-y-5 sm:space-y-4">
                     <?php foreach ($announcements as $news): ?>
                         <article class="panel p-5 sm:p-7" data-news-card data-important="<?= $news['important'] ? 'true' : 'false' ?>" id="news-<?= e($news['id']) ?>">
                             <div class="flex flex-wrap items-center gap-2">
