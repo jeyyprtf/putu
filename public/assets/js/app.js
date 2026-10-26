@@ -47,17 +47,32 @@
             if (days === 1) return 'Besok';
             return `${days} hari lagi`;
         };
+        const statusModes = ['all', 'unfinished', 'done'];
+        const statusLabels = { all: 'Semua', unfinished: 'Belum', done: 'Selesai' };
+        const statusNames = { all: 'Semua', unfinished: 'Belum selesai', done: 'Selesai' };
         let statusFilter = new URLSearchParams(location.search).get('status');
-        if (!validStatuses.includes(statusFilter)) statusFilter = 'all';
+        if (statusFilter === 'todo' || statusFilter === 'doing') statusFilter = 'unfinished';
+        if (!statusModes.includes(statusFilter)) statusFilter = 'all';
+        let courseFilter = '';
+        let latestFirst = false;
         const cards = all('[data-task-card]');
         const applyFilters = () => {
-            const course = one('#course-filter')?.value || '';
             let visible = 0;
             for (const card of cards) {
-                card.hidden = (statusFilter !== 'all' && statuses[card.dataset.taskId] !== statusFilter) || (course !== '' && card.dataset.course !== course);
+                const done = statuses[card.dataset.taskId] === 'done';
+                card.hidden = (statusFilter === 'unfinished' && done) || (statusFilter === 'done' && !done) || (courseFilter !== '' && card.dataset.course !== courseFilter);
                 if (!card.hidden) visible++;
             }
-            if (one('#status-filter')) one('#status-filter').value = statusFilter;
+            const button = one('#status-filter');
+            if (button) {
+                button.dataset.status = statusFilter;
+                button.querySelector('[data-status-label]').textContent = statusLabels[statusFilter];
+                const next = statusModes[(statusModes.indexOf(statusFilter) + 1) % statusModes.length];
+                const label = `Status: ${statusNames[statusFilter]}. Ganti ke ${statusNames[next]}.`;
+                button.setAttribute('aria-label', label);
+                button.title = label;
+            }
+            for (const pill of all('[data-course-filter]')) pill.setAttribute('aria-pressed', String(pill.dataset.courseFilter === courseFilter));
             if (one('#task-result')) one('#task-result').textContent = `${visible} tugas`;
             if (one('#tasks-empty')) one('#tasks-empty').hidden = visible !== 0;
         };
@@ -110,21 +125,36 @@
                 one('#task-feedback').textContent = message;
             });
         }
-        one('#status-filter')?.addEventListener('change', (event) => {
-            statusFilter = event.target.value;
+        one('#status-filter')?.addEventListener('click', () => {
+            statusFilter = statusModes[(statusModes.indexOf(statusFilter) + 1) % statusModes.length];
             applyFilters();
         });
-        one('#course-filter')?.addEventListener('change', applyFilters);
-        one('#task-sort')?.addEventListener('change', (event) => {
-            const sort = event.target.value;
-            cards.sort((a, b) => sort === 'title' ? a.dataset.title.localeCompare(b.dataset.title, 'id') : (sort === 'latest' ? -1 : 1) * a.dataset.deadline.localeCompare(b.dataset.deadline));
-            one('#task-list').append(...cards);
+        for (const button of all('[data-course-filter]')) button.addEventListener('click', () => {
+            courseFilter = button.dataset.courseFilter;
+            applyFilters();
+        });
+        const sortTasks = () => {
+            cards.sort((a, b) => (latestFirst ? -1 : 1) * a.dataset.deadline.localeCompare(b.dataset.deadline));
+            one('#task-list')?.append(...cards);
+            const button = one('#task-sort');
+            if (button) {
+                button.querySelector('[data-sort-label]').textContent = latestFirst ? 'Terlama' : 'Terdekat';
+                button.querySelector('svg').classList.toggle('rotate-180', latestFirst);
+                const label = `Urutan: Deadline ${latestFirst ? 'terlama' : 'terdekat'}. Ganti ke deadline ${latestFirst ? 'terdekat' : 'terlama'}.`;
+                button.setAttribute('aria-label', label);
+                button.title = label;
+            }
+        };
+        one('#task-sort')?.addEventListener('click', () => {
+            latestFirst = !latestFirst;
+            sortTasks();
         });
         one('[data-reset-filters]')?.addEventListener('click', () => {
             statusFilter = 'all';
-            one('#course-filter').value = '';
+            courseFilter = '';
             applyFilters();
         });
+        sortTasks();
         refresh();
     }
 

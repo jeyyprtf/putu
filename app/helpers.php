@@ -57,6 +57,8 @@ function icon(string $name, string $class = 'size-5'): string
         'bell' => '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>',
         'book' => '<path d="M12 5v16M12 5C9 2 5 3 2 3v16c4 0 7 0 10 2 3-2 6-2 10-2V3c-3 0-7-1-10 2Z"/>',
         'arrow' => '<path d="M7 17 17 7M7 7h10v10"/>',
+        'sort' => '<path d="M12 4v16m-6-6 6 6 6-6"/>',
+        'cycle' => '<path d="M20 7a8 8 0 0 0-14-2L3 8m0-5v5h5M4 17a8 8 0 0 0 14 2l3-3m0 5v-5h-5"/>',
         'back' => '<path d="M19 12H5m6-6-6 6 6 6"/>',
         'chevron' => '<path d="m9 5 7 7-7 7"/>',
         'check' => '<path d="m5 12 4 4L19 6"/>',

@@ -44,24 +44,36 @@ try {
     await evaluate('sessionStorage.clear()'); await navigate('tugas');
     assert.equal(await visibleCount('[data-task-card]'), 6);
     assert.equal(await evaluate('document.querySelector("#task-result").textContent'), '6 tugas');
-    assert.equal(await evaluate('document.querySelector("[data-task-filters]").open'), false);
     assert.equal(await evaluate('document.querySelector("footer")'), null);
-    await change('#status-filter', 'done');
+    await click('#status-filter');
+    assert.equal(await visibleCount('[data-task-card]'), 5);
+    assert.equal(await evaluate('document.querySelector("[data-task-id=stack]").hidden'), false, 'Ongoing tasks are unfinished');
+    await click('#status-filter');
     assert.equal(await visibleCount('[data-task-card]'), 1);
-    await change('#status-filter', 'all');
+    await click('#status-filter');
+    assert.equal(await visibleCount('[data-task-card]'), 6);
     await change('[data-task-id="normalisasi"] [data-task-status]', 'done');
-    await change('#status-filter', 'done');
+    await click('#status-filter');
+    assert.equal(await visibleCount('[data-task-card]'), 4);
+    await click('#status-filter');
     assert.equal(await visibleCount('[data-task-card]'), 2);
-    await click('[data-task-filters] > summary');
-    assert.equal(await evaluate('document.querySelector("[data-task-filters]").open'), true);
-    await change('#course-filter', 'Sistem Operasi');
+    await click('[data-course-filter="Sistem Operasi"]');
     assert.equal(await visibleCount('[data-task-card]'), 0);
     assert.equal(await evaluate('document.querySelector("#tasks-empty").hidden'), false);
     await click('[data-reset-filters]');
-    assert.equal(await evaluate('document.querySelector("#status-filter").value'), 'all');
+    assert.equal(await evaluate('document.querySelector("#status-filter").dataset.status'), 'all');
+    assert.equal(await evaluate('document.querySelector("[data-course-filter][aria-pressed=true]").dataset.courseFilter'), '');
     assert.equal(await visibleCount('[data-task-card]'), 6);
-    await change('#task-sort', 'title');
-    assert.equal(await evaluate('document.querySelector("[data-task-card]").dataset.taskId'), 'checkout');
+    await click('[data-course-filter="Basis Data"]');
+    assert.equal(await visibleCount('[data-task-card]'), 2);
+    await click('[data-course-filter=""]');
+    const deadlines = () => evaluate('[...document.querySelectorAll("[data-task-card]")].map(card => card.dataset.deadline)');
+    const nearestFirst = await deadlines();
+    assert.deepEqual(nearestFirst, [...nearestFirst].sort());
+    await click('#task-sort');
+    assert.deepEqual(await deadlines(), [...nearestFirst].reverse());
+    await click('#task-sort');
+    assert.deepEqual(await deadlines(), nearestFirst);
     await click('[data-task-id="stack"] summary');
     assert.equal(await evaluate('document.querySelector("[data-task-id=stack] details").open'), true);
     await navigate('dashboard');
@@ -70,10 +82,18 @@ try {
     await navigate('dashboard', true);
     assert.equal(await evaluate('document.querySelector("[data-progress-percent]").textContent'), '33%');
     await navigate('tugas&status=done');
-    assert.equal(await evaluate('document.querySelector("#status-filter").value'), 'done');
+    assert.equal(await evaluate('document.querySelector("#status-filter").dataset.status'), 'done');
     assert.equal(await visibleCount('[data-task-card]'), 2);
     await change('[data-task-id="erd"] [data-task-status]', 'todo');
     assert.equal(await evaluate('document.querySelector("[data-task-id=erd] [data-deadline-badge]").textContent'), 'Terlambat');
+    assert.equal(await visibleCount('[data-task-card]'), 1);
+    for (const status of ['todo', 'doing', 'unfinished']) {
+        await navigate(`tugas&status=${status}`);
+        assert.equal(await evaluate('document.querySelector("#status-filter").dataset.status'), 'unfinished');
+        assert.equal(await visibleCount('[data-task-card]'), 5);
+    }
+    await navigate('tugas&status=invalid');
+    assert.equal(await visibleCount('[data-task-card]'), 6);
     await navigate('jadwal');
     assert.equal(await visibleCount('[data-schedule-day]'), 1);
     await click('[data-day="6"]');
@@ -104,6 +124,10 @@ try {
             await send('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 1, mobile: width < 768 });
             await wait(80);
             assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true, `${page} overflow at ${width}px`);
+            if (page === 'tugas' && width < 640) {
+                assert.equal(await evaluate('(() => { const row = document.querySelector("[data-course-filter]").parentElement; row.scrollLeft = row.scrollWidth; return row.scrollLeft > 0; })()'), true, 'Course pills scroll on mobile');
+                assert.equal(await evaluate('[...document.querySelectorAll("#status-filter, #task-sort, [data-course-filter]")].every(button => button.offsetHeight >= 44)'), true, 'Touch targets stay at least 44px');
+            }
         }
     }
     assert.deepEqual(exceptions, [], 'Browser JavaScript errors');

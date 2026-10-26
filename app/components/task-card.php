@@ -1,5 +1,5 @@
 <?php $deadlineLabel = deadline_label($task); ?>
-<article class="panel p-4 sm:p-6" data-task-card data-task-id="<?= e($task['id']) ?>" data-course="<?= e($task['course']) ?>" data-title="<?= e($task['title']) ?>" data-deadline="<?= e($task['deadline']) ?>" data-status="<?= e($task['status']) ?>">
+<article class="panel p-4 sm:p-6" data-task-card data-task-id="<?= e($task['id']) ?>" data-course="<?= e($task['course']) ?>" data-deadline="<?= e($task['deadline']) ?>" data-status="<?= e($task['status']) ?>">
     <div class="flex items-start justify-between gap-3">
         <p class="min-w-0 text-xs leading-5 text-stone-400">
             <span class="font-medium text-stone-200"><?= e($task['course']) ?></span>

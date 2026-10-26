@@ -21,58 +21,27 @@ require_once __DIR__ . '/../bootstrap.php';
                         Tugas saya<span class="text-lime-300">.</span>
                     </h1>
                 </section>
-                <div class="mb-1 flex items-center justify-between gap-3">
+                <div aria-label="Filter mata kuliah" role="group" class="mb-2 flex gap-2 overflow-x-auto pb-1">
+                    <button type="button" data-course-filter="" aria-pressed="true" class="filter-tab shrink-0">Semua</button>
+                    <?php foreach ($courseNames as $course): ?>
+                        <button type="button" data-course-filter="<?= e($course) ?>" aria-pressed="false" class="filter-tab shrink-0">
+                            <?= e($course) ?>
+                        </button>
+                    <?php endforeach; ?>
+                </div>
+                <div class="mb-3 flex items-center justify-between gap-2">
                     <p id="task-result" role="status" aria-live="polite" class="min-w-0 text-xs text-stone-400">
                         <?= $taskCounts['all'] ?> tugas
                     </p>
-                    <div>
-                        <label for="status-filter" class="sr-only">Filter status tugas</label>
-                        <select id="status-filter" class="min-h-11 max-w-full rounded-full border border-stone-800 bg-stone-900 px-4 text-xs text-stone-200">
-                            <option value="all">Semua status</option>
-                            <option value="todo">Belum dikerjakan</option>
-                            <option value="doing">Sedang dikerjakan</option>
-                            <option value="done">Selesai</option>
-                        </select>
+                    <div class="flex shrink-0 gap-2">
+                        <button id="status-filter" type="button" class="filter-tab px-3!" aria-label="Status: Semua. Ganti ke belum selesai.">
+                            <?= icon('cycle', 'size-3.5') ?><span data-status-label>Semua</span>
+                        </button>
+                        <button id="task-sort" type="button" class="filter-tab px-3!" aria-label="Urutan: Deadline terdekat. Ganti ke deadline terlama.">
+                            <?= icon('sort', 'size-3.5') ?><span data-sort-label>Terdekat</span>
+                        </button>
                     </div>
                 </div>
-                <details data-task-filters class="mb-3">
-                    <summary class="ml-auto flex min-h-11 w-fit items-center gap-2 text-xs text-stone-400 hover:text-lime-200">
-                        Mata kuliah & urutan<span class="details-arrow transition-transform"><?= icon('chevron', 'size-3') ?></span>
-                    </summary>
-                    <div class="mt-2 grid gap-3 sm:grid-cols-2 lg:max-w-2xl">
-                        <div>
-                            <label for="course-filter" class="mb-2 block text-xs text-stone-400">
-                                Mata kuliah
-                            </label>
-                            <select id="course-filter" class="field">
-                                <option value="">
-                                    Semua mata kuliah
-                                </option>
-                                <?php foreach ($courseNames as $course): ?>
-                                    <option value="<?= e($course) ?>">
-                                        <?= e($course) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="task-sort" class="mb-2 block text-xs text-stone-400">
-                                Urutkan
-                            </label>
-                            <select id="task-sort" class="field">
-                                <option value="deadline">
-                                    Deadline terdekat
-                                </option>
-                                <option value="latest">
-                                    Deadline terjauh
-                                </option>
-                                <option value="title">
-                                    Judul A–Z
-                                </option>
-                            </select>
-                        </div>
-                    </div>
-                </details>
                 <section id="task-list" aria-label="Daftar tugas" class="grid items-start gap-3 sm:gap-4 xl:grid-cols-2">
                     <?php foreach ($tasks as $task): ?>
                         <?php require __DIR__ . '/../components/task-card.php'; ?>
