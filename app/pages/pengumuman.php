@@ -53,7 +53,7 @@ require_once __DIR__ . '/../bootstrap.php';
                                 <?= e($news['summary']) ?>
                             </p>
                             <details class="mt-1 sm:mt-4" <?= ($_GET['id'] ?? '') === $news['id'] ? 'open' : '' ?>>
-                                <summary class="flex min-h-11 w-fit items-center gap-2 text-xs font-semibold text-lime-300">
+                                <summary class="ml-auto flex min-h-11 w-fit items-center gap-2 text-xs font-semibold text-lime-300">
                                     Baca selengkapnya<span class="details-arrow transition-transform"><?= icon('chevron', 'size-3') ?></span>
                                 </summary>
                                 <div class="mt-2 border-t border-stone-800 pt-3 text-sm leading-6 text-stone-300 sm:mt-3 sm:pt-4 sm:leading-8">
