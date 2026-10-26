@@ -39,9 +39,18 @@ for page in ['unknown', '../app/helpers.php', ['dashboard']]:
     query = urllib.parse.urlencode({'page[]' if isinstance(page, list) else 'page': page})
     assert get('/index.php?' + query)[0] == 404
 
-for page in ['login', 'register', 'dashboard', 'tugas', 'jadwal', 'pengumuman']:
+for page in ['home', 'login', 'register', 'dashboard', 'tugas', 'jadwal', 'pengumuman']:
     code, html = get('/app/pages/' + page + '.php')
     assert code == 200 and html.lower().count('<!doctype html>') == 1
     assert 'Warning:' not in html
+    assert 'http-equiv="refresh"' not in html
 
-print('PASS: 7 pages, local links/assets, legacy URLs, sample data, and invalid routes.')
+for page in ['login', 'register']:
+    request = urllib.request.Request(base + '/app/pages/' + page + '.php', data=b'email=preview%40example.com&password=previewonly')
+    with urllib.request.urlopen(request, timeout=10) as response:
+        html = response.read().decode()
+        feedback = re.search(r'<p id="auth-feedback"([^>]*)>', html)
+        assert response.status == 200 and feedback and 'hidden' not in feedback[1]
+        assert 'previewonly' not in html
+
+print('PASS: direct pages, local links/assets, legacy routes, sample data, invalid routes, and auth preview POST.')

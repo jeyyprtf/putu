@@ -29,7 +29,7 @@
     if (data) {
         const tasks = JSON.parse(data.textContent);
         const today = data.dataset.today;
-        const storageKey = `putu-preview:${location.pathname}:${today}`;
+        const storageKey = `putu-preview:${data.dataset.storagePath}:${today}`;
         const validStatuses = ['todo', 'doing', 'done'];
         const statuses = Object.fromEntries(tasks.map((task) => [task.id, task.status]));
         try {

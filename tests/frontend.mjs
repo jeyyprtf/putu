@@ -25,8 +25,10 @@ const evaluate = async (expression) => {
     return result.result.value;
 };
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const navigate = async (page) => {
-    await send('Page.navigate', { url: `${base}/index.php${page ? '?page=' + page : ''}` });
+const navigate = async (page, legacy = false) => {
+    const [name, ...query] = page.split('&');
+    const path = legacy ? '/index.php?page=' + page : name ? '/app/pages/' + name + '.php' + (query.length ? '?' + query.join('&') : '') : '/index.php';
+    await send('Page.navigate', { url: base + path });
     for (let count = 0; count < 100; count++) {
         await wait(100);
         if (await evaluate('document.readyState === "complete" && !!document.title && getComputedStyle(document.body).backgroundColor !== "rgba(0, 0, 0, 0)"')) return;
@@ -59,6 +61,8 @@ try {
     await navigate('dashboard');
     assert.equal(await evaluate('document.querySelector("[data-progress-percent]").textContent'), '33%');
     assert.equal(await evaluate('document.querySelector("[data-count=active]").textContent'), '4');
+    await navigate('dashboard', true);
+    assert.equal(await evaluate('document.querySelector("[data-progress-percent]").textContent'), '33%');
     await navigate('tugas&status=done');
     assert.equal(await visibleCount('[data-task-card]'), 2);
     await change('[data-task-id="erd"] [data-task-status]', 'todo');

@@ -7,15 +7,24 @@ function e(string|int $value): string
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 }
 
+function base_url(): string
+{
+    $directory = dirname($_SERVER['SCRIPT_NAME'] ?? '/index.php');
+    if (str_ends_with($directory, '/app/pages')) {
+        $directory = dirname($directory, 2);
+    }
+    return rtrim($directory, '/.');
+}
+
 function url(string $page = '', array $query = []): string
 {
-    $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/index.php'), '/.');
-    return $base . '/index.php' . ($page === '' ? '' : '?' . http_build_query(['page' => $page] + $query));
+    $path = $page === '' ? '/index.php' : '/app/pages/' . $page . '.php';
+    return base_url() . $path . ($query === [] ? '' : '?' . http_build_query($query));
 }
 
 function asset(string $path): string
 {
-    return rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/index.php'), '/.') . '/' . $path;
+    return base_url() . '/' . $path;
 }
 
 function date_id(string $date, bool $year = false): string
