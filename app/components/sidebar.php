@@ -1,6 +1,6 @@
 <aside class="fixed inset-y-3 left-3 z-40 hidden w-60 flex-col rounded-3xl border border-stone-800 bg-stone-900/60 p-5 lg:flex">
-    <a href="<?= e(url()) ?>" class="flex items-center gap-3 px-5 py-2" aria-label="PUTU beranda">
-        <span class="flex size-9 items-center justify-center rounded-xl bg-lime-500 text-lime-950"><?= icon('book') ?></span> <span class="text-3xl font-extrabold tracking-tighter">putu<span class="text-lime-500">.</span></span>
+    <a href="<?= e(url()) ?>" class="flex items-center px-5 py-2" aria-label="PUTU beranda">
+        <span class="text-3xl font-extrabold tracking-tighter">putu<span class="text-lime-500">.</span></span>
     </a>
     <p class="mt-3 px-2 text-[11px] leading-5 text-stone-400">
         A little less chaos. A lot more focus.
