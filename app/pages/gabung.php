@@ -42,10 +42,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     <head>
         <?php require __DIR__ . '/../components/head.php'; ?>
     </head>
-    <body class="min-h-dvh bg-stone-950 font-sans text-stone-100 antialiased">
-        <div class="grid min-h-dvh lg:grid-cols-2">
+    <body class="bg-stone-950 font-sans text-stone-100 antialiased">
+        <div class="grid lg:grid-cols-2">
             <?php require __DIR__ . '/../components/auth-visual.php'; ?>
-            <div class="relative flex min-h-dvh flex-col px-6 py-6 sm:px-10 lg:px-12">
+            <div class="relative flex flex-col px-6 py-6 sm:px-10 lg:px-12">
                 <div class="flex items-center justify-between gap-3">
                     <a href="<?= e(url()) ?>" class="flex min-h-11 items-center gap-2 text-xs text-stone-400 hover:text-lime-200">
                         <?= icon('back', 'size-4') ?>Kembali ke beranda
@@ -66,7 +66,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                     </p>
 
                     <?php if ($mode === ''): ?>
-                        <div class="mt-8 flex w-full flex-col items-center justify-center gap-4 sm:mt-10">
+                        <div class="mt-4 lg:mt-8 flex w-full flex-col items-center justify-center gap-4 sm:mt-10">
                             <a href="<?= e(url('gabung', ['mode' => 'create'])) ?>" class="group flex min-h-50 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-white/10 bg-lime-700/20 p-8 text-center transition-all duration-300 hover:bg-lime-500">
                                 <p class="text-4xl font-bold text-white/80 transition-all duration-300 group-hover:text-white">Buat Kelas</p>
                                 <p class="text-base font-semibold text-white/50 transition-all duration-300 group-hover:text-white/80">Jika kamu admin kelas <br> kamu bisa bikin kelas baru disini.</p>
