@@ -160,7 +160,20 @@ try {
     await navigate('register');
     await evaluate('document.querySelector("#password").value="short"; document.querySelector("#password").dispatchEvent(new Event("input",{bubbles:true}))');
     assert.equal(await evaluate('document.querySelector("#password").minLength'), 8);
-    for (const page of ['', 'login', 'register', 'dashboard', 'tugas', 'jadwal', 'pengumuman']) {
+    await navigate('dashboard');
+    await click('header a[aria-label="Buka profil dan pengaturan"]');
+    await wait(300);
+    assert.equal(await evaluate('document.querySelector("#profile-form").method'), 'post');
+    assert.equal(await evaluate('document.querySelector("#profile-name").name'), 'name');
+    assert.equal(await evaluate('document.querySelector("#profile-email").name'), 'email');
+    assert.equal(await evaluate('document.querySelector("#profile-save").disabled'), true);
+    assert.equal(await evaluate('document.querySelector("#preview-title")'), null);
+    await change('#profile-name', 'Batal');
+    await click('#profile-form [type=reset]');
+    assert.equal(await evaluate('document.querySelector("#profile-name").value'), 'Juan');
+    await navigate('pengaturan', true);
+    assert.equal(await evaluate('document.querySelector("#profile-email").value'), 'juan@example.com');
+    for (const page of ['', 'login', 'register', 'dashboard', 'tugas', 'jadwal', 'pengumuman', 'pengaturan']) {
         await navigate(page);
         for (const width of [320, 390, 768, 1024, 1440]) {
             await send('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 1, mobile: width < 768 });
@@ -186,7 +199,7 @@ try {
     assert.equal(await evaluate('document.querySelector("[data-progress-percent]").textContent'), '0%');
     assert.equal(await evaluate('document.querySelector("#priorities-empty").hidden'), false);
     assert.deepEqual(exceptions, [], 'Browser JavaScript errors');
-    console.log('PASS: filters, sorting, details, preview progress, schedule, auth controls, and 35 viewport checks.');
+    console.log('PASS: filters, sorting, details, preview progress, schedule, auth, profile form/navigation, and 40 viewport checks.');
 } finally {
     await send('Page.close').catch(() => {});
     socket.close();
