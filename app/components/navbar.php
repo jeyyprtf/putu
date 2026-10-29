@@ -13,17 +13,17 @@
             <a href="<?= e(url('pengumuman')) ?>" class="icon-button relative" aria-label="Lihat pengumuman">
                 <?= icon('bell') ?><span class="absolute top-2 right-2 size-1.5 rounded-full bg-lime-400"></span>
             </a>
-            <div class="flex items-center gap-3" aria-label="Pratinjau mahasiswa Juan">
-                <span class="flex size-10 items-center justify-center rounded-full bg-lime-300/15 text-sm font-semibold text-lime-200">J</span>
+            <a href="<?= e(url('pengaturan')) ?>" class="flex min-h-11 items-center gap-3 rounded-full hover:text-lime-200" aria-label="Buka profil dan pengaturan" <?= $page === 'pengaturan' ? 'aria-current="page"' : '' ?>>
+                <span class="flex size-10 items-center justify-center rounded-full bg-lime-300/15 text-sm font-semibold text-lime-200"><?= e($profile['initial']) ?></span>
                 <div class="hidden sm:block">
-                    <p class="text-xs font-semibold">
-                        Juan
+                    <p class="max-w-32 truncate text-xs font-semibold">
+                        <?= e($profile['name']) ?>
                     </p>
                     <p class="mt-1 text-[10px] text-stone-400">
                         Mahasiswa · Pratinjau
                     </p>
                 </div>
-            </div>
+            </a>
         </div>
     </div>
 </header>
