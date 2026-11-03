@@ -1,5 +1,8 @@
 <?php
 
+// shortcut: profil contoh; ambil pengguna aktif dari backend saat autentikasi tersedia.
+$profile = ['name' => 'Juan', 'email' => 'juan@example.com', 'initial' => 'J'];
+
 // shortcut: data pratinjau mengikuti hari ini; ganti sumber ini saat database terhubung.
 $today = new DateTimeImmutable('today');
 $tasks = [

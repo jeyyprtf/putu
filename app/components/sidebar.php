@@ -5,7 +5,7 @@
     <p class="mt-3 px-2 text-[11px] leading-5 text-stone-400">
         A little less chaos. A lot more focus.
     </p>
-    <div class="mt-6 flex items-center gap-3 rounded-2xl border border-stone-800 bg-stone-950/50 p-3">
+    <div class="mt-6 flex items-center gap-3 rounded-3xl border border-stone-800 bg-stone-950/50 p-3">
         <span class="text-lime-300"><?= icon('book') ?></span>
         <div>
             <p class="text-xs font-semibold leading-5">
@@ -34,7 +34,10 @@
         </a>
     </nav>
     <div class="mt-auto space-y-3 pt-8">
-        <details class="rounded-2xl border border-stone-800 p-3 text-xs text-stone-400">
+        <a href="<?= e(url('pengaturan')) ?>" class="nav-link" <?= $page === 'pengaturan' ? 'aria-current="page"' : '' ?>>
+            <?= icon('user') ?>Profil & pengaturan
+        </a>
+        <details class="rounded-3xl border border-stone-800 p-3 text-xs text-stone-400">
             <summary class="flex min-h-6 items-center gap-2 text-stone-300">
                 <?= icon('info', 'size-4') ?>Panduan singkat
             </summary>

@@ -1,2 +1,17 @@
+# Kredensial database - JANGAN pernah di-commit
 app/config/database.local.php
 .env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea
+*.log
+
+# Halaman tes lokal - tidak ikut commit
+tests/pages/
+
+# Build
+node_modules/

@@ -18,7 +18,7 @@ require_once __DIR__ . '/../bootstrap.php';
             <main id="konten" class="workspace-content mx-auto max-w-7xl px-5 py-8 pt-4 sm:px-8 sm:pt-8 lg:px-10 lg:py-10 lg:pt-10">
                 <section class="mb-4">
                     <h1 class="mt-1 text-3xl font-semibold tracking-tight sm:mt-0 sm:text-4xl">
-                        Halo, Juan<span class="text-lime-300">.</span>
+                        Halo, <span class="break-words"><?= e($profile['name']) ?></span><span class="text-lime-300">.</span>
                     </h1>
                 </section>
                 <section aria-label="Progres tugas" class="panel mb-3 px-4 py-3">

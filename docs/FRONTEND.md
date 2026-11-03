@@ -19,6 +19,7 @@ Buka `http://127.0.0.1:8000/`. Tiap halaman dapat dibuka langsung, misalnya `htt
 | Tugas | `app/pages/tugas.php` |
 | Jadwal | `app/pages/jadwal.php` |
 | Pengumuman | `app/pages/pengumuman.php` |
+| Profil & pengaturan | `app/pages/pengaturan.php` |
 | Navbar atas / sidebar / dock | `app/components/navbar.php`, `sidebar.php`, `dock.php` |
 | Kartu tugas berulang | `app/components/task-card.php` |
 | Foto kiri login/register | `app/components/auth-visual.php` |
@@ -77,7 +78,8 @@ Login/register mengikuti komposisi dua kolom referensi Figma node `20:19`: foto 
 - Data contoh bersama berada di `app/demo.php`. Deadline mengikuti tanggal server Asia/Jakarta agar contoh tetap relevan.
 - Status tugas memakai `sessionStorage` khusus pratinjau per tab dan tanggal; tidak tersimpan ke akun. Dashboard dan halaman tugas membaca status yang sama.
 - Form login/register memvalidasi format lewat browser, tetapi belum melakukan autentikasi atau menyimpan data. Tombol pratinjau terpisah tersedia untuk melihat halaman mahasiswa.
-- Pembuatan/gabung kelas, profil, admin, autentikasi, dan database adalah tahap berikutnya.
+- Profil & pengaturan dapat dibuka dari avatar navbar atau sidebar. Data profil contoh berada di `$profile` pada `app/demo.php`, dipakai navbar, dashboard, dan form. Form memakai POST dengan field `name`/`email`; Batal memakai reset bawaan browser. Simpan dinonaktifkan sampai handler backend, autentikasi, validasi server, dan CSRF tersedia. Tidak ada penyimpanan profil di browser.
+- Pembuatan/gabung kelas, perubahan password, admin, autentikasi, dan database adalah tahap berikutnya.
 - Tailwind CDN dan Google Fonts memerlukan koneksi internet. Sebelum deployment produksi, siapkan build CSS lokal dan document root publik sesuai panduan backend; server PHP bawaan ini hanya untuk pengembangan.
 
 ## Pemeriksaan

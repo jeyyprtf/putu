@@ -17,7 +17,7 @@ def get(path):
         return response.code, response.read().decode('utf-8', errors='replace')
 
 
-for page in ['', 'login', 'register', 'dashboard', 'tugas', 'jadwal', 'pengumuman']:
+for page in ['', 'login', 'register', 'dashboard', 'tugas', 'jadwal', 'pengumuman', 'pengaturan']:
     code, html = get('/index.php' + ('?page=' + page if page else ''))
     assert code == 200, page
     assert html.lower().count('<!doctype html>') == 1, page
@@ -43,7 +43,7 @@ for page in ['unknown', '../app/helpers.php', ['dashboard']]:
     query = urllib.parse.urlencode({'page[]' if isinstance(page, list) else 'page': page})
     assert get('/index.php?' + query)[0] == 404
 
-for page in ['home', 'login', 'register', 'dashboard', 'tugas', 'jadwal', 'pengumuman']:
+for page in ['home', 'login', 'register', 'dashboard', 'tugas', 'jadwal', 'pengumuman', 'pengaturan']:
     path = '/app/pages/' + page + '.php'
     with urllib.request.urlopen(base + path, timeout=10) as response:
         assert response.geturl() == base + path, ('Direct page redirected', page)
