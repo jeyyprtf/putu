@@ -2,6 +2,51 @@
 $page = 'login';
 $title = 'Masuk';
 require_once __DIR__ . '/../bootstrap.php';
+require_once __DIR__ . '/../auth.php';
+
+auth_session_start();
+
+if (auth_user_id() !== null) {
+    header('Location: ' . url('dashboard'));
+    exit;
+}
+
+$error = '';
+$email = '';
+
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    $email = mb_strtolower(trim((string) ($_POST['email'] ?? '')));
+    $password = (string) ($_POST['password'] ?? '');
+
+    if (!csrf_verify($_POST['csrf'] ?? null)) {
+        $error = 'Sesi formulir kedaluwarsa. Muat ulang halaman lalu coba lagi.';
+    } elseif ($email === '' || strlen($email) > 254 || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'Format email tidak valid.';
+    } elseif ($password === '' || strlen($password) > 72) {
+        $error = 'Email atau password salah.';
+    } else {
+        try {
+            $user = db_one(
+                'SELECT id_user, password_hash FROM users WHERE email = ?',
+                [$email]
+            );
+
+            if ($user !== null && password_verify($password, $user['password_hash'])) {
+                auth_login((int) $user['id_user']);
+                header('Location: ' . url('gabung'));
+                exit;
+            }
+
+            $error = 'Email atau password salah.';
+        } catch (PDOException $ex) {
+            error_log('[login] ' . $ex->getMessage());
+            $error = 'Terjadi kesalahan saat masuk. Coba lagi sebentar lagi.';
+        } catch (RuntimeException $ex) {
+            error_log('[login] ' . $ex->getMessage());
+            $error = 'Layanan database belum tersedia. Hubungi pengelola aplikasi.';
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -30,19 +75,20 @@ require_once __DIR__ . '/../bootstrap.php';
                     <p class="mt-3 text-sm leading-7 text-stone-400">
                         Masuk dan lihat apa yang perlu kamu fokuskan hari ini.
                     </p>
-                    <form action="<?= e(url('login')) ?>" method="POST" data-auth-form class="mt-8 space-y-5">
+                    <form action="<?= e(url('login')) ?>" method="POST" class="mt-8 space-y-5">
+                        <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
                         <div>
                             <label for="email" class="mb-2 block text-xs font-semibold">
                                 Email
                             </label>
-                            <input id="email" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="nama@email.com" class="field">
+                            <input id="email" name="email" type="email" autocomplete="email" required maxlength="254" value="<?= e($email) ?>" placeholder="nama@email.com" class="field">
                         </div>
                         <div>
                             <label for="password" class="mb-2 block text-xs font-semibold">
                                 Password
                             </label>
                             <div class="relative">
-                                <input id="password" name="password" type="password" autocomplete="current-password"  required placeholder="Masukkan password kamu" class="field pr-14!">
+                                <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="Masukkan password kamu" class="field pr-14!">
                                 <button type="button" data-password-toggle aria-label="Tampilkan password" aria-controls="password" aria-pressed="false" class="absolute top-0 right-1 flex size-12 items-center justify-center rounded-xl text-stone-400 hover:text-lime-200">
                                     <?= icon('eye', 'size-4') ?>
                                 </button>
@@ -56,9 +102,7 @@ require_once __DIR__ . '/../bootstrap.php';
                         <button type="submit" class="button w-full">
                             Masuk ke PUTU<?= icon('arrow', 'size-4') ?>
                         </button>
-                        <p id="auth-feedback" role="status" aria-live="polite" class="text-xs leading-6 text-amber-200" <?= ($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST' ? 'hidden' : '' ?>>
-                            Autentikasi belum terhubung. Kamu bisa menjelajahi pratinjau di bawah ini; data form tidak disimpan.
-                        </p>
+                        <p id="auth-feedback" role="alert" aria-live="polite" class="text-xs leading-6 text-red-300" <?= $error === '' ? 'hidden' : '' ?>><?= e($error) ?></p>
                     </form>
                     <p class="mt-6 text-center text-xs leading-6 text-stone-400">
                         Belum punya akun?

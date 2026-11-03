@@ -2,7 +2,7 @@
 
 /**
  * Helper sesi dan CSRF untuk autentikasi PUTU.
- * Dipakai oleh register.php (dan nanti login.php, logout, dan halaman yang butuh login).
+ * Dipakai oleh register, login, logout, dan halaman yang memerlukan session.
  */
 
 /**

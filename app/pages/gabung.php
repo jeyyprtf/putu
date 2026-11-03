@@ -2,6 +2,7 @@
 $page = 'gabung';
 $title = 'Masuk';
 require_once __DIR__ . '/../bootstrap.php';
+require_once __DIR__ . '/../auth.php';
 
 // Sementara hardcode. Ganti dengan nama user asli saat login sudah terhubung.
 $userName = 'Mahasiswa';
@@ -53,6 +54,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                     <a href="<?= e(url()) ?>" class="text-2xl font-extrabold tracking-tighter lg:hidden">
                         putu<span class="text-lime-500">.</span>
                     </a>
+                    <?php require __DIR__ . '/../components/logout-form.php'; ?>
                 </div>
                 <main class="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10 sm:py-14">
                     <p class="eyebrow">

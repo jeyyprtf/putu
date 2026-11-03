@@ -9,9 +9,9 @@ function e(string|int $value): string
 
 function base_url(): string
 {
-    $directory = dirname($_SERVER['SCRIPT_NAME'] ?? '/index.php');
+    $directory = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/index.php'));
     if (str_ends_with($directory, '/app/pages')) {
-        $directory = dirname($directory, 2);
+        $directory = str_replace('\\', '/', dirname($directory, 2));
     }
     return rtrim($directory, '/.');
 }

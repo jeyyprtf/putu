@@ -2,6 +2,8 @@
 
 // Persiapan bersama sebelum halaman menampilkan HTML.
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/auth.php';
+auth_session_start();
 require_once __DIR__ . '/demo.php';
 
 // Database dimuat kalau sudah dikonfigurasi. Kalau belum, halaman tetap jalan

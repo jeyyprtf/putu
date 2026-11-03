@@ -17,12 +17,8 @@
         button.setAttribute('aria-pressed', String(visible));
         button.setAttribute('aria-label', visible ? 'Sembunyikan password' : 'Tampilkan password');
     });
-    one('[data-auth-form]')?.addEventListener('submit', (event) => {
-        event.preventDefault();
-        authFeedback('Autentikasi belum terhubung. Jelajahi pratinjau mahasiswa di bawah ini; data form tidak disimpan.');
-    });
     one('[data-forgot-password]')?.addEventListener('click', () => {
-        authFeedback('Pemulihan password akan tersedia setelah akun dan backend terhubung.');
+        authFeedback('Fitur lupa password belum tersedia. Hubungi pengelola untuk bantuan.');
     });
 
     const data = one('#task-data');
