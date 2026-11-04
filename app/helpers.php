@@ -7,6 +7,46 @@ function e(string|int $value): string
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 }
 
+function is_post(): bool
+{
+    return ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
+}
+
+/**
+ * Ambil input POST sebagai string yang sudah di-trim.
+ * Input bukan string (mis. name[]=x) dianggap kosong.
+ */
+function post_str(string $key): string
+{
+    $value = $_POST[$key] ?? '';
+    return is_string($value) ? trim($value) : '';
+}
+
+/**
+ * Jumlah karakter UTF-8 (tanpa mbstring), atau null kalau bukan UTF-8 valid
+ * atau mengandung karakter kontrol.
+ */
+function text_length(string $value): ?int
+{
+    if (preg_match('/\p{Cc}/u', $value) !== 0) {
+        return null;
+    }
+    $count = preg_match_all('/./su', $value);
+    return $count === false ? null : $count;
+}
+
+/** Huruf pertama nama dalam huruf besar (aman untuk UTF-8 tanpa mbstring). */
+function first_letter(string $text): string
+{
+    return preg_match('/^./u', $text, $m) === 1 ? strtoupper($m[0]) : '?';
+}
+
+function redirect(string $to): never
+{
+    header('Location: ' . $to);
+    exit;
+}
+
 function base_url(): string
 {
     $directory = dirname($_SERVER['SCRIPT_NAME'] ?? '/index.php');

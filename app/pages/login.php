@@ -2,6 +2,50 @@
 $page = 'login';
 $title = 'Masuk';
 require_once __DIR__ . '/../bootstrap.php';
+
+require_guest();
+
+$error = '';
+$oldEmail = '';
+
+if (is_post()) {
+    $oldEmail = strtolower(post_str('email'));
+    $password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
+
+    if (!csrf_verify()) {
+        $error = 'Sesi form kedaluwarsa. Muat ulang halaman lalu coba lagi.';
+    } elseif ($oldEmail === '' || $password === '' || strlen($oldEmail) > 254 || strlen($password) > 72) {
+        $error = 'Email atau password salah.';
+    } else {
+        try {
+            $user = db_one(
+                'SELECT id_user, password_hash FROM users WHERE email = :email',
+                ['email' => $oldEmail]
+            );
+
+            // Hash tiruan: waktu respons tetap sama walau email tidak terdaftar,
+            // jadi penyerang tidak bisa menebak email mana yang ada.
+            $hash = $user['password_hash'] ?? '$2y$12$Gcju7U4ksTCdsqiYvEbEs./XcyNGxtZ.9bv8mdamFfCdp1F9VMnsO';
+            $valid = password_verify($password, $hash) && $user !== null;
+
+            if ($valid) {
+                // Naikkan cost hash lama kalau standar PHP sudah berubah.
+                if (password_needs_rehash($hash, PASSWORD_DEFAULT)) {
+                    db_exec(
+                        'UPDATE users SET password_hash = :hash WHERE id_user = :id',
+                        ['hash' => password_hash($password, PASSWORD_DEFAULT), 'id' => $user['id_user']]
+                    );
+                }
+                login_user((int) $user['id_user']);
+                redirect(home_url_for(current_user()));
+            }
+            $error = 'Email atau password salah.';
+        } catch (Throwable $e) {
+            error_log('[login] ' . $e->getMessage());
+            $error = 'Terjadi kesalahan di server. Coba lagi nanti.';
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -30,19 +74,20 @@ require_once __DIR__ . '/../bootstrap.php';
                     <p class="mt-3 text-sm leading-7 text-stone-400">
                         Masuk dan lihat apa yang perlu kamu fokuskan hari ini.
                     </p>
-                    <form action="<?= e(url('login')) ?>" method="POST" data-auth-form class="mt-8 space-y-5">
+                    <form action="<?= e(url('login')) ?>" method="POST" class="mt-8 space-y-5">
+                        <?= csrf_field() ?>
                         <div>
                             <label for="email" class="mb-2 block text-xs font-semibold">
                                 Email
                             </label>
-                            <input id="email" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="nama@email.com" class="field">
+                            <input id="email" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="nama@email.com" value="<?= e($oldEmail) ?>" class="field">
                         </div>
                         <div>
                             <label for="password" class="mb-2 block text-xs font-semibold">
                                 Password
                             </label>
                             <div class="relative">
-                                <input id="password" name="password" type="password" autocomplete="current-password"  required placeholder="Masukkan password kamu" class="field pr-14!">
+                                <input id="password" name="password" type="password" autocomplete="current-password"  required maxlength="72" placeholder="Masukkan password kamu" class="field pr-14!">
                                 <button type="button" data-password-toggle aria-label="Tampilkan password" aria-controls="password" aria-pressed="false" class="absolute top-0 right-1 flex size-12 items-center justify-center rounded-xl text-stone-400 hover:text-lime-200">
                                     <?= icon('eye', 'size-4') ?>
                                 </button>
@@ -56,8 +101,8 @@ require_once __DIR__ . '/../bootstrap.php';
                         <button type="submit" class="button w-full">
                             Masuk ke PUTU<?= icon('arrow', 'size-4') ?>
                         </button>
-                        <p id="auth-feedback" role="status" aria-live="polite" class="text-xs leading-6 text-amber-200" <?= ($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST' ? 'hidden' : '' ?>>
-                            Autentikasi belum terhubung. Kamu bisa menjelajahi pratinjau di bawah ini; data form tidak disimpan.
+                        <p id="auth-feedback" role="alert" aria-live="polite" class="text-xs leading-6 text-red-300" <?= $error === '' ? 'hidden' : '' ?>>
+                            <?= e($error) ?>
                         </p>
                     </form>
                     <p class="mt-6 text-center text-xs leading-6 text-stone-400">
@@ -66,14 +111,6 @@ require_once __DIR__ . '/../bootstrap.php';
                             Daftar sekarang
                         </a>
                     </p>
-                    <div class="mt-8 border-t border-stone-800 pt-6">
-                        <a href="<?= e(url('dashboard')) ?>" class="flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-stone-800 px-4 text-xs text-stone-300 hover:border-stone-600 hover:text-lime-200">
-                            Jelajahi pratinjau mahasiswa <?= icon('arrow', 'size-4') ?>
-                        </a>
-                        <p class="mt-3 text-center text-[10px] leading-5 text-stone-500">
-                            Pratinjau frontend · Belum membuat atau masuk ke akun.
-                        </p>
-                    </div>
                 </main>
                 <footer class="text-center text-[10px] leading-5 text-stone-500">
                     © <?= date('Y') ?> PUTU. Make room for what matters.

@@ -2,6 +2,7 @@
 $page = 'pengaturan';
 $title = 'Profil & pengaturan';
 require_once __DIR__ . '/../bootstrap.php';
+require_login();
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -24,7 +25,7 @@ require_once __DIR__ . '/../bootstrap.php';
                             <span class="flex size-16 shrink-0 items-center justify-center rounded-3xl bg-lime-300/15 text-2xl font-semibold text-lime-200"><?= e($profile['initial']) ?></span>
                             <div class="min-w-0">
                                 <p class="truncate text-lg font-semibold"><?= e($profile['name']) ?></p>
-                                <p class="mt-1 text-xs text-stone-400">Mahasiswa · SIB 2B</p>
+                                <p class="mt-1 text-xs text-stone-400"><?= e($profile['role']) ?> · <?= e($profile['kelas']) ?></p>
                             </div>
                         </div>
                         <div class="p-5 sm:p-6">
@@ -52,11 +53,17 @@ require_once __DIR__ . '/../bootstrap.php';
                         <h2 id="class-title" class="mt-4 text-base font-semibold">Kelas kamu</h2>
                         <p class="mt-2 text-xs leading-6 text-stone-400">Tempat tugas, jadwal, dan kabar kelasmu berkumpul.</p>
                         <dl class="mt-5 space-y-4 border-t border-stone-800 pt-5 text-sm">
-                            <div><dt class="text-xs text-stone-400">Program studi</dt><dd class="mt-1.5 font-medium">Sistem Informasi Bisnis</dd></div>
-                            <div><dt class="text-xs text-stone-400">Kelas</dt><dd class="mt-1.5 font-medium">SIB · 2B</dd></div>
-                            <div><dt class="text-xs text-stone-400">Peran</dt><dd class="mt-1.5 font-medium">Mahasiswa</dd></div>
+                            <div><dt class="text-xs text-stone-400">Kelas</dt><dd class="mt-1.5 font-medium"><?= e($profile['kelas']) ?></dd></div>
+                            <div><dt class="text-xs text-stone-400">Peran</dt><dd class="mt-1.5 font-medium"><?= e($profile['role']) ?></dd></div>
+                            <?php if ($currentUser['role'] === 'admin'): ?>
+                                <div><dt class="text-xs text-stone-400">Kode gabung (bagikan ke teman sekelas)</dt><dd class="mt-1.5 font-mono text-base font-semibold tracking-[0.2em] text-lime-300"><?= e($currentUser['kode_gabung']) ?></dd></div>
+                            <?php endif; ?>
                         </dl>
                         <a href="<?= e(url('jadwal')) ?>" class="mt-5 flex min-h-11 items-center justify-between gap-2 border-t border-stone-800 pt-4 text-xs font-semibold text-lime-300">Lihat jadwal kelas <?= icon('arrow', 'size-4') ?></a>
+                        <form action="<?= e(url('logout')) ?>" method="POST" class="mt-2 lg:hidden">
+                            <?= csrf_field() ?>
+                            <button type="submit" class="button button-secondary w-full"><?= icon('logout', 'size-4') ?>Keluar</button>
+                        </form>
                     </section>
                 </div>
             </main>

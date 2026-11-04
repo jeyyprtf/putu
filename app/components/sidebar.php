@@ -9,10 +9,10 @@
         <span class="text-lime-300"><?= icon('book') ?></span>
         <div>
             <p class="text-xs font-semibold leading-5">
-                Sistem Informasi Bisnis
+                <?= e($profile['kelas']) ?>
             </p>
             <p class="text-xs text-stone-400">
-                SIB · 2B
+                <?= e($profile['role']) ?>
             </p>
         </div>
     </div>
@@ -42,11 +42,14 @@
                 <?= icon('info', 'size-4') ?>Panduan singkat
             </summary>
             <p class="mt-3 leading-6">
-                Pilih tugas untuk melihat detail. Ubah status untuk mencoba progres pribadi. Ini pratinjau; perubahan hanya berlaku di tab ini, tanpa akun atau database.
+                Pilih tugas untuk melihat detail dan ubah statusnya. Sebagian data masih contoh sementara fitur database dikerjakan bertahap.
             </p>
         </details>
-        <a href="<?= e(url()) ?>" class="nav-link">
-            <?= icon('logout') ?>Kembali ke beranda
-        </a>
+        <form action="<?= e(url('logout')) ?>" method="POST">
+            <?= csrf_field() ?>
+            <button type="submit" class="nav-link w-full">
+                <?= icon('logout') ?>Keluar
+            </button>
+        </form>
     </div>
 </aside>

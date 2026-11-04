@@ -1,10 +1,16 @@
 <?php
 $page = 'gabung';
-$title = 'Masuk';
+$title = 'Gabung kelas';
 require_once __DIR__ . '/../bootstrap.php';
 
-// Sementara hardcode. Ganti dengan nama user asli saat login sudah terhubung.
-$userName = 'Mahasiswa';
+$user = require_login(false); // boleh tanpa kelas, tapi harus login
+
+// Sudah punya kelas: tidak perlu di halaman ini lagi.
+if ($user['id_kelas'] !== null) {
+    redirect(url('dashboard'));
+}
+
+$userName = $user['nama'];
 
 // Mode dibaca dari URL: gabung.php?mode=create atau gabung.php?mode=join
 $mode = $_GET['mode'] ?? '';
@@ -15,25 +21,43 @@ if (!in_array($mode, ['create', 'join'], true)) {
 $notice = '';
 $noticeIsError = false;
 
-// Backend belum terhubung: form hanya divalidasi lalu menampilkan pesan.
-if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
-    if ($mode === 'create') {
-        $name = trim($_POST['name'] ?? '');
-        $prodi = trim($_POST['prodi'] ?? '');
-        if ($name === '' || $prodi === '') {
-            $notice = 'Nama kelas dan prodi wajib diisi.';
+if (is_post() && $mode !== '') {
+    try {
+        if (!csrf_verify()) {
+            $notice = 'Sesi form kedaluwarsa. Muat ulang halaman lalu coba lagi.';
             $noticeIsError = true;
+        } elseif ($mode === 'create') {
+            $name = post_str('name');
+            $len = text_length($name);
+
+            if ($len === null || $len < 3 || $len > 100) {
+                $notice = 'Nama kelas harus 3–100 karakter.';
+                $noticeIsError = true;
+            } elseif (kelas_buat((int) $user['id_user'], $name) === null) {
+                $notice = 'Kamu sudah tergabung di sebuah kelas.';
+                $noticeIsError = true;
+            } else {
+                // Berhasil: user kini admin kelas. Kode gabung tampil di halaman pengaturan.
+                redirect(url('dashboard'));
+            }
         } else {
-            $notice = 'Kelas "' . $name . '" (' . $prodi . ') siap dibuat. Backend belum terhubung, jadi belum tersimpan.';
+            // Kode disimpan huruf besar; spasi/tanda hubung dibuang agar input lebih toleran.
+            $code = strtoupper(preg_replace('/[\s-]+/', '', post_str('code')));
+
+            if ($code === '' || strlen($code) > 16) {
+                $notice = 'Kode kelas wajib diisi.';
+                $noticeIsError = true;
+            } elseif (!kelas_gabung((int) $user['id_user'], $code)) {
+                $notice = 'Kode kelas tidak ditemukan.';
+                $noticeIsError = true;
+            } else {
+                redirect(url('dashboard'));
+            }
         }
-    } elseif ($mode === 'join') {
-        $code = strtoupper(trim($_POST['code'] ?? ''));
-        if ($code === '') {
-            $notice = 'Kode kelas wajib diisi.';
-            $noticeIsError = true;
-        } else {
-            $notice = 'Kode "' . $code . '" siap dipakai untuk bergabung. Backend belum terhubung, jadi belum tersimpan.';
-        }
+    } catch (Throwable $e) {
+        error_log('[gabung] ' . $e->getMessage());
+        $notice = 'Terjadi kesalahan di server. Coba lagi nanti.';
+        $noticeIsError = true;
     }
 }
 ?>
@@ -89,6 +113,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                             <?php if ($mode === 'create'): ?>
                                 <!-- Form: Buat Kelas -->
                                 <form action="<?= e(url('gabung', ['mode' => 'create'])) ?>" method="POST" class="space-y-5 rounded-4xl border border-white/10 bg-stone-900/60 p-6 sm:p-8">
+                                    <?= csrf_field() ?>
                                     <div>
                                         <h2 class="text-xl font-semibold tracking-tight">Buat Kelas Baru<span class="text-lime-300">.</span></h2>
                                         <p class="mt-1 text-xs leading-6 text-stone-400">Kamu akan menjadi admin kelas ini.</p>
@@ -97,10 +122,6 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                                         <label for="class-name" class="mb-2 block text-xs font-semibold">Nama Kelas</label>
                                         <input id="class-name" name="name" type="text" required maxlength="100" placeholder="Contoh: Basis Data IF-3A" value="<?= e($_POST['name'] ?? '') ?>" class="field">
                                     </div>
-                                    <div>
-                                        <label for="class-prodi" class="mb-2 block text-xs font-semibold">Prodi</label>
-                                        <input id="class-prodi" name="prodi" type="text" required maxlength="100" placeholder="Contoh: Informatika" value="<?= e($_POST['prodi'] ?? '') ?>" class="field">
-                                    </div>
                                     <button type="submit" class="button w-full">
                                         Buat Kelas<?= icon('arrow', 'size-4') ?>
                                     </button>
@@ -108,13 +129,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                             <?php else: ?>
                                 <!-- Form: Gabung Kelas -->
                                 <form action="<?= e(url('gabung', ['mode' => 'join'])) ?>" method="POST" class="space-y-5 rounded-4xl border border-white/10 bg-stone-900/60 p-6 sm:p-8">
+                                    <?= csrf_field() ?>
                                     <div>
                                         <h2 class="text-xl font-semibold tracking-tight">Gabung Kelas<span class="text-lime-300">.</span></h2>
                                         <p class="mt-1 text-xs leading-6 text-stone-400">Minta kode invitation dari admin kelas kamu.</p>
                                     </div>
                                     <div>
                                         <label for="class-code" class="mb-2 block text-xs font-semibold">Kode Kelas</label>
-                                        <input id="class-code" name="code" type="text" required maxlength="20" placeholder="Contoh: IF3A-BD" autocomplete="off" autocapitalize="characters" spellcheck="false" value="<?= e($_POST['code'] ?? '') ?>" class="field uppercase tracking-[0.2em]">
+                                        <input id="class-code" name="code" type="text" required maxlength="16" placeholder="Contoh: K7M2X9QA" autocomplete="off" autocapitalize="characters" spellcheck="false" value="<?= e($_POST['code'] ?? '') ?>" class="field uppercase tracking-[0.2em]">
                                     </div>
                                     <button type="submit" class="button w-full">
                                         Gabung Kelas<?= icon('arrow', 'size-4') ?>
@@ -123,7 +145,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                             <?php endif; ?>
 
                             <?php if ($notice !== ''): ?>
-                                <p role="status" aria-live="polite" class="mt-4 text-xs leading-6 <?= $noticeIsError ? 'text-red-300' : 'text-amber-200' ?>">
+                                <p role="status" aria-live="polite" class="mt-4 text-xs leading-6 <?= $noticeIsError ? 'text-red-300' : 'text-lime-200' ?>">
                                     <?= e($notice) ?>
                                 </p>
                             <?php endif; ?>

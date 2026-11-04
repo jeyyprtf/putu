@@ -20,7 +20,7 @@
                         <?= e($profile['name']) ?>
                     </p>
                     <p class="mt-1 text-[10px] text-stone-400">
-                        Mahasiswa · Pratinjau
+                        <?= e($profile['role']) ?>
                     </p>
                 </div>
             </a>

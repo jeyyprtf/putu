@@ -2,6 +2,7 @@
 $page = 'jadwal';
 $title = 'Jadwal kuliah';
 require_once __DIR__ . '/../bootstrap.php';
+require_login();
 ?>
 <!DOCTYPE html>
 <html lang="id">
