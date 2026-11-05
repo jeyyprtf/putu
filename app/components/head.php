@@ -6,7 +6,7 @@
 </script>
 <?php require __DIR__ . '/fonts.php'; ?>
 <link rel="stylesheet" href="<?= e(asset('resources/css/app.css')) ?>">
-<?php if (in_array($page, ['dashboard', 'tugas', 'jadwal', 'pengumuman'], true)): ?>
+<?php if ($page === 'dashboard'): ?>
     <script id="task-data" type="application/json" data-today="<?= $today->format('Y-m-d') ?>" data-storage-path="<?= e(asset('index.php')) ?>">
         <?= json_encode($tasks, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
     </script>

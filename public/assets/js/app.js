@@ -21,28 +21,23 @@
         authFeedback('Pemulihan password belum tersedia. Hubungi admin kelas kamu.');
     });
 
-    const data = one('#task-data');
-    if (data) {
-        const tasks = JSON.parse(data.textContent);
-        const today = data.dataset.today;
-        const storageKey = `putu-preview:${data.dataset.storagePath}:${today}`;
-        const validStatuses = ['todo', 'doing', 'done'];
-        const statuses = Object.fromEntries(tasks.map((task) => [task.id, task.status]));
-        try {
-            const saved = JSON.parse(sessionStorage.getItem(storageKey));
-            for (const task of tasks) {
-                if (validStatuses.includes(saved?.[task.id])) statuses[task.id] = saved[task.id];
-            }
-        } catch { /* Pratinjau tetap bekerja jika penyimpanan browser tidak tersedia. */ }
-        const daysLeft = (task) => Math.round((Date.parse(`${task.deadline}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86400000);
-        const deadlineLabel = (task) => {
-            const days = daysLeft(task);
-            if (statuses[task.id] === 'done') return 'Selesai';
+    // Filter dan urutan daftar tugas. Sumber kebenaran ada di atribut kartu
+    // (data-status, data-deadline, data-course) yang dirender PHP dari database.
+    // Tidak ada penyimpanan di browser: status diubah lewat form POST.
+    const taskList = one('#task-list');
+    if (taskList) {
+        const today = taskList.dataset.today;
+        const daysLeft = (card) => Math.round((Date.parse(`${card.dataset.deadline}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86400000);
+        const isDone = (card) => card.dataset.status === 'done';
+        const deadlineLabel = (card) => {
+            const days = daysLeft(card);
+            if (isDone(card)) return 'Selesai';
             if (days < 0) return 'Terlambat';
             if (days === 0) return 'Hari ini';
             if (days === 1) return 'Besok';
             return `${days} hari lagi`;
         };
+
         const statusModes = ['all', 'unfinished', 'done'];
         const statusLabels = { all: 'Semua', unfinished: 'Belum', done: 'Selesai' };
         const statusNames = { all: 'Semua', unfinished: 'Belum selesai', done: 'Selesai' };
@@ -52,14 +47,16 @@
         let courseFilter = '';
         let latestFirst = false;
         const cards = all('[data-task-card]');
-        const deadlineRows = all('[data-priority-task]');
+
         const applyFilters = () => {
             let visible = 0;
             for (const card of cards) {
-                const done = statuses[card.dataset.taskId] === 'done';
-                card.hidden = (statusFilter === 'unfinished' && done) || (statusFilter === 'done' && !done) || (courseFilter !== '' && card.dataset.course !== courseFilter);
+                card.hidden = (statusFilter === 'unfinished' && isDone(card))
+                    || (statusFilter === 'done' && !isDone(card))
+                    || (courseFilter !== '' && card.dataset.course !== courseFilter);
                 if (!card.hidden) visible++;
             }
+
             const button = one('#status-filter');
             if (button) {
                 button.dataset.status = statusFilter;
@@ -69,7 +66,9 @@
                 button.setAttribute('aria-label', label);
                 button.title = label;
             }
+
             for (const option of all('[data-course-filter]')) option.setAttribute('aria-pressed', String(option.dataset.courseFilter === courseFilter));
+
             const coursePicker = one('#course-picker');
             if (coursePicker) {
                 coursePicker.querySelector('[data-course-label]').textContent = courseFilter || 'Matkul';
@@ -78,71 +77,33 @@
                 coursePicker.setAttribute('aria-label', label);
                 coursePicker.title = label;
             }
+
             if (one('#task-result')) one('#task-result').textContent = `${visible} tugas`;
             if (one('#tasks-empty')) one('#tasks-empty').hidden = visible !== 0;
         };
-        const refresh = () => {
-            const counts = { all: tasks.length, active: 0, priority: 0, calm: 0, todo: 0, doing: 0, done: 0 };
-            for (const task of tasks) {
-                counts[statuses[task.id]]++;
-                if (statuses[task.id] !== 'done') {
-                    counts.active++;
-                    if (daysLeft(task) <= 2) counts.priority++;
-                }
-                const card = cards.find((card) => card.dataset.taskId === task.id);
-                if (card) {
-                    card.dataset.status = statuses[task.id];
-                    card.querySelector('[data-task-status]').value = statuses[task.id];
-                }
-                const row = deadlineRows.find((row) => row.dataset.priorityTask === task.id);
-                for (const item of [card, row]) {
-                    const badge = item?.querySelector('[data-deadline-badge]');
-                    if (!badge) continue;
-                    badge.textContent = deadlineLabel(task);
-                    badge.dataset.urgent = String(daysLeft(task) >= 0 && daysLeft(task) <= 2);
-                    badge.dataset.late = String(daysLeft(task) < 0);
-                    badge.dataset.done = String(statuses[task.id] === 'done');
-                }
-            }
-            counts.calm = counts.active - counts.priority;
-            for (const node of all('[data-count]')) {
-                node.textContent = String(counts[node.dataset.count]);
-            }
-            const percent = tasks.length ? Math.round(counts.done / tasks.length * 100) : 0;
-            if (one('[data-progress-percent]')) one('[data-progress-percent]').textContent = `${percent}%`;
-            if (one('[data-progress]')) {
-                one('[data-progress]').value = counts.done;
-                one('[data-progress]').textContent = `${percent}%`;
-            }
-            let shown = 0;
-            for (const row of deadlineRows) {
-                row.hidden = statuses[row.dataset.priorityTask] === 'done' || shown >= 3;
-                if (!row.hidden) shown++;
-            }
-            if (one('#priorities-empty')) one('#priorities-empty').hidden = counts.active !== 0;
-            applyFilters();
-        };
-        for (const select of all('[data-task-status]')) {
-            select.addEventListener('change', () => {
-                const id = select.closest('[data-task-card]').dataset.taskId;
-                if (!validStatuses.includes(select.value)) return;
-                statuses[id] = select.value;
-                let message = 'Progres pratinjau diperbarui di tab ini. Belum tersimpan ke akun.';
-                try { sessionStorage.setItem(storageKey, JSON.stringify(statuses)); }
-                catch { message = 'Progres berubah sementara. Browser tidak mengizinkan penyimpanan; perubahan hilang saat pindah halaman.'; }
-                refresh();
-                one('#task-feedback').textContent = message;
-            });
+
+        // Label badge dihitung ulang di browser supaya tetap akurat walau
+        // halaman dibuka lama. Data aslinya tetap dari PHP.
+        for (const card of cards) {
+            const badge = card.querySelector('[data-deadline-badge]');
+            if (!badge) continue;
+            badge.textContent = deadlineLabel(card);
+            badge.dataset.urgent = String(daysLeft(card) >= 0 && daysLeft(card) <= 2);
+            badge.dataset.late = String(daysLeft(card) < 0);
+            badge.dataset.done = String(isDone(card));
         }
+
         one('#status-filter')?.addEventListener('click', () => {
             statusFilter = statusModes[(statusModes.indexOf(statusFilter) + 1) % statusModes.length];
             applyFilters();
         });
+
         for (const button of all('[data-course-filter]')) button.addEventListener('click', () => {
             courseFilter = button.dataset.courseFilter;
             applyFilters();
             one('#course-drawer').close();
         });
+
         const courseDrawer = one('#course-drawer');
         one('#course-picker')?.addEventListener('click', () => {
             courseDrawer.showModal();
@@ -152,6 +113,7 @@
         courseDrawer?.addEventListener('click', (event) => {
             if (event.target === courseDrawer && event.clientX < courseDrawer.getBoundingClientRect().left) courseDrawer.close();
         });
+
         const sortTasks = () => {
             cards.sort((a, b) => (latestFirst ? -1 : 1) * a.dataset.deadline.localeCompare(b.dataset.deadline));
             one('#task-list')?.append(...cards);
@@ -173,8 +135,59 @@
             courseFilter = '';
             applyFilters();
         });
+
         sortTasks();
-        refresh();
+        applyFilters();
+    }
+
+    // Dashboard: hitungan dan badge deadline disegarkan dari #task-data.
+    // Hanya membaca; perubahan status disimpan halaman tugas lewat POST.
+    const data = one('#task-data');
+    if (data) {
+        const tasks = JSON.parse(data.textContent);
+        const today = data.dataset.today;
+        const statuses = Object.fromEntries(tasks.map((task) => [task.id, task.status]));
+        const daysLeft = (task) => Math.round((Date.parse(`${task.deadline}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86400000);
+        const deadlineLabel = (task) => {
+            const days = daysLeft(task);
+            if (statuses[task.id] === 'done') return 'Selesai';
+            if (days < 0) return 'Terlambat';
+            if (days === 0) return 'Hari ini';
+            if (days === 1) return 'Besok';
+            return `${days} hari lagi`;
+        };
+
+        const counts = { all: tasks.length, active: 0, priority: 0, calm: 0, todo: 0, doing: 0, done: 0 };
+        for (const task of tasks) {
+            counts[statuses[task.id]]++;
+            if (statuses[task.id] !== 'done') {
+                counts.active++;
+                if (daysLeft(task) <= 2) counts.priority++;
+            }
+            const row = all('[data-priority-task]').find((item) => item.dataset.priorityTask === String(task.id));
+            const badge = row?.querySelector('[data-deadline-badge]');
+            if (badge) {
+                badge.textContent = deadlineLabel(task);
+                badge.dataset.urgent = String(daysLeft(task) >= 0 && daysLeft(task) <= 2);
+                badge.dataset.late = String(daysLeft(task) < 0);
+                badge.dataset.done = String(statuses[task.id] === 'done');
+            }
+        }
+        counts.calm = counts.active - counts.priority;
+
+        for (const node of all('[data-count]')) node.textContent = String(counts[node.dataset.count]);
+        const percent = tasks.length ? Math.round(counts.done / tasks.length * 100) : 0;
+        if (one('[data-progress-percent]')) one('[data-progress-percent]').textContent = `${percent}%`;
+        if (one('[data-progress]')) {
+            one('[data-progress]').value = counts.done;
+            one('[data-progress]').textContent = `${percent}%`;
+        }
+        let shown = 0;
+        for (const row of all('[data-priority-task]')) {
+            row.hidden = statuses[row.dataset.priorityTask] === 'done' || shown >= 3;
+            if (!row.hidden) shown++;
+        }
+        if (one('#priorities-empty')) one('#priorities-empty').hidden = counts.active !== 0;
     }
 
     const schedule = one('#schedule-list');
