@@ -25,12 +25,24 @@ function post_str(string $key): string
 /**
  * Jumlah karakter UTF-8 (tanpa mbstring), atau null kalau bukan UTF-8 valid
  * atau mengandung karakter kontrol.
+ *
+ * $allowNewline dipakai untuk teks panjang (mis. textarea) yang boleh berisi
+ * baris baru. Tanpa ini, newline dihitung sebagai karakter kontrol dan input
+ * dianggap tidak valid.
  */
-function text_length(string $value): ?int
+function text_length(string $value, bool $allowNewline = false): ?int
 {
-    if (preg_match('/\p{Cc}/u', $value) !== 0) {
+    if (preg_match('//u', $value) !== 1) {
         return null;
     }
+
+    // \p{Cc} = semua karakter kontrol. Kalau newline diizinkan, keluarkan
+    // \x0A (LF) dan \x0D (CR) dari larangan.
+    $pola = $allowNewline ? '/[\x00-\x09\x0B-\x1F\x7F]/' : '/\p{Cc}/u';
+    if (preg_match($pola, $value) !== 0) {
+        return null;
+    }
+
     $count = preg_match_all('/./su', $value);
     return $count === false ? null : $count;
 }

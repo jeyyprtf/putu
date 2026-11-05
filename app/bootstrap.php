@@ -12,6 +12,7 @@ if (is_file(__DIR__ . '/config/database.php')) {
 
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/kelas.php';
+require_once __DIR__ . '/pengumuman.php';
 
 // Profil di navbar/sidebar/pengaturan memakai user yang login (kalau ada).
 // Tanpa cookie session, tidak ada query DB sama sekali.
