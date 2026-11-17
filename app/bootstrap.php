@@ -13,8 +13,12 @@ if (is_file(__DIR__ . '/config/database.php')) {
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/kelas.php';
 require_once __DIR__ . '/pengumuman.php';
+// CRUD jadwal admin dimuat hanya oleh halaman admin.
 require_once __DIR__ . '/tugas.php';
+require_once __DIR__ . '/jadwal.php';
 require_once __DIR__ . '/anggota.php';
+require_once __DIR__ . '/telegram.php';
+
 
 // Profil di navbar/sidebar/pengaturan memakai user yang login (kalau ada).
 // Tanpa cookie session, tidak ada query DB sama sekali.
@@ -34,4 +38,3 @@ if ($currentUser !== null) {
         'kelas'   => $currentUser['nama_kelas'] ?? 'Belum bergabung kelas',
     ];
 }
-

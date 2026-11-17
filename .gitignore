@@ -1,5 +1,6 @@
 # Kredensial database - JANGAN pernah di-commit
 app/config/database.local.php
+app/config/telegram.local.php
 .env
 .env.*
 !.env.example

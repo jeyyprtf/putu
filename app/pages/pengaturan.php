@@ -2,7 +2,57 @@
 $page = 'pengaturan';
 $title = 'Profil & pengaturan';
 require_once __DIR__ . '/../bootstrap.php';
-require_login();
+require_once __DIR__ . '/../telegram-api.php';
+$user = require_login();
+$telegram = null;
+$telegramError = '';
+$telegramOk = '';
+$telegramReady = telegram_configured();
+try {
+    $telegram = telegram_account((int) $user['id_user']);
+    if (is_post()) {
+        if (!csrf_verify()) {
+            $telegramError = 'Sesi form kedaluwarsa. Muat ulang halaman lalu coba lagi.';
+        } elseif (post_str('aksi') === 'telegram_connect') {
+            header('Referrer-Policy: no-referrer');
+            redirect(telegram_connect_url((int) $user['id_user']));
+        } elseif (post_str('aksi') === 'telegram_disconnect') {
+            telegram_disconnect((int) $user['id_user']);
+            redirect(url('pengaturan', ['telegram' => 'disconnected']));
+        } elseif (post_str('aksi') === 'telegram_save') {
+            telegram_preferences((int) $user['id_user'], post_str('reminder_hours'),
+                post_str('reminders_enabled') === '1', post_str('news_enabled') === '1');
+            redirect(url('pengaturan', ['telegram' => 'saved']));
+        } elseif (post_str('aksi') === 'telegram_test') {
+            if (time() - ($_SESSION['telegram_test_at'] ?? 0) < 30) {
+                throw new InvalidArgumentException('Tunggu 30 detik sebelum mengirim pesan tes lagi.');
+            }
+            telegram_test_notification((int) $user['id_user'], function (int $chatId, string $text): void {
+                $_SESSION['telegram_test_at'] = time();
+                telegram_api('sendMessage', ['chat_id' => $chatId, 'text' => $text]);
+            });
+            redirect(url('pengaturan', ['telegram' => 'tested']));
+        } else {
+            $telegramError = 'Aksi tidak dikenal.';
+        }
+    }
+    $status = $_GET['telegram'] ?? '';
+    $telegramOk = $status === 'saved' ? 'Pengaturan notifikasi disimpan.'
+        : ($status === 'disconnected' ? 'Koneksi Telegram diputus.'
+        : ($status === 'tested' ? 'Pesan tes berhasil dikirim. Cek chat bot PUTU di Telegram.' : ''));
+} catch (InvalidArgumentException $e) {
+    $telegramError = $e->getMessage();
+} catch (TelegramApiException $e) {
+    error_log('[telegram test] Pengiriman gagal (kode ' . $e->getCode() . ').');
+    $telegramError = match ($e->getCode()) {
+        403 => 'Bot tidak dapat mengirim pesan. Buka Telegram dan pastikan bot PUTU tidak diblokir.',
+        429 => 'Telegram membatasi pengiriman. Coba lagi setelah ' . $e->retryAfter . ' detik.',
+        default => 'Pesan tes belum bisa dikirim. Coba lagi nanti atau hubungi pengelola PUTU.',
+    };
+} catch (Throwable $e) {
+    error_log('[telegram settings] ' . $e->getMessage());
+    $telegramError = 'Pengaturan Telegram belum tersedia. Hubungi pengelola PUTU.';
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -66,6 +116,52 @@ require_login();
                         </form>
                     </section>
                 </div>
+                <section aria-labelledby="telegram-title" class="panel mt-5 rounded-3xl! p-5 sm:p-6">
+                    <h2 id="telegram-title" class="text-base font-semibold">Notifikasi Telegram</h2>
+                    <p class="mt-2 text-sm leading-6 text-stone-400">Pengingat pribadi untuk tugas yang belum selesai dan kabar dari kelasmu.</p>
+                    <?php if ($telegramOk !== ''): ?>
+                        <p role="status" class="mt-4 text-sm text-lime-200"><?= e($telegramOk) ?></p>
+                    <?php endif; ?>
+                    <?php if ($telegramError !== ''): ?>
+                        <p role="alert" class="mt-4 text-sm text-red-300"><?= e($telegramError) ?></p>
+                    <?php endif; ?>
+                    <?php if (!$telegramReady): ?>
+                        <p class="mt-4 text-sm text-stone-400">Bot Telegram belum diaktifkan oleh pengelola PUTU.</p>
+                    <?php endif; ?>
+                    <?php if ($telegram !== null): ?>
+                        <p class="mt-4 text-sm font-semibold"><?= $telegram['chat_id'] !== null ? 'Telegram terhubung' : 'Telegram belum terhubung' ?></p>
+                        <?php if ($telegram['chat_id'] === null && $telegramReady): ?>
+                            <p id="telegram-connect-hint" class="mt-2 text-xs leading-6 text-stone-400">Buka bot, tekan Start, lalu kembali dan muat ulang halaman ini untuk melihat status koneksi. Tautan berlaku 10 menit.</p>
+                            <form action="<?= e(url('pengaturan')) ?>" method="POST" target="_blank" rel="noopener noreferrer" class="mt-3">
+                                <?= csrf_field() ?>
+                                <button name="aksi" value="telegram_connect" class="button" aria-describedby="telegram-connect-hint">Hubungkan Telegram <?= icon('arrow', 'size-4') ?></button>
+                            </form>
+                        <?php endif; ?>
+                        <form action="<?= e(url('pengaturan')) ?>" method="POST" class="mt-5 max-w-xl space-y-4">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="aksi" value="telegram_save">
+                            <div>
+                                <label for="reminder-hours" class="mb-2 block text-xs font-semibold">Ingatkan berapa jam sebelum deadline?</label>
+                                <input id="reminder-hours" name="reminder_hours" type="number" min="1" max="168" step="1" required value="<?= e((int) $telegram['reminder_hours']) ?>" aria-describedby="reminder-hours-hint" class="field">
+                                <p id="reminder-hours-hint" class="mt-2 text-xs leading-6 text-stone-400">1–168 jam, berlaku untuk semua tugasmu. Contoh: 24 untuk sehari sebelumnya. Satu pengingat per tugas; jika deadline berubah, pengingat dapat dikirim lagi.</p>
+                            </div>
+                            <label class="flex min-h-11 items-center gap-3 text-sm"><input name="reminders_enabled" type="checkbox" value="1" <?= $telegram['reminders_enabled'] ? 'checked' : '' ?> class="size-4 accent-lime-500">Aktifkan pengingat deadline</label>
+                            <label class="flex min-h-11 items-center gap-3 text-sm"><input name="news_enabled" type="checkbox" value="1" <?= $telegram['news_enabled'] ? 'checked' : '' ?> class="size-4 accent-lime-500">Kirim pengumuman kelas ke Telegram</label>
+                            <button type="submit" class="button">Simpan notifikasi</button>
+                        </form>
+                        <?php if ($telegram['chat_id'] !== null): ?>
+                            <form action="<?= e(url('pengaturan')) ?>" method="POST" class="mt-5 border-t border-stone-800 pt-5">
+                                <?= csrf_field() ?>
+                                <button name="aksi" value="telegram_test" class="button button-secondary disabled:cursor-not-allowed disabled:opacity-50" aria-describedby="telegram-test-hint" <?= !$telegramReady ? 'disabled' : '' ?>><?= icon('bell', 'size-4') ?>Tes notifikasi</button>
+                                <p id="telegram-test-hint" class="mt-2 text-xs leading-6 text-stone-400">Kirim satu pesan percobaan ke Telegram kamu. Jeda 30 detik antartes.</p>
+                            </form>
+                            <form action="<?= e(url('pengaturan')) ?>" method="POST" class="mt-4">
+                                <?= csrf_field() ?>
+                                <button name="aksi" value="telegram_disconnect" class="button button-secondary">Putuskan koneksi Telegram</button>
+                            </form>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </section>
             </main>
         </div>
         <?php require __DIR__ . '/../components/dock.php'; ?>

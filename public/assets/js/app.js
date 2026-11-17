@@ -220,3 +220,22 @@
     for (const button of all('[data-news-filter]')) button.addEventListener('click', () => filterNews(button.dataset.newsFilter));
     one('[data-news-reset]')?.addEventListener('click', () => filterNews('Semua'));
 })();
+
+
+const toast = document.getElementById('toast');
+
+if (toast) {
+    const isError = toast.getAttribute('role') === 'alert';
+
+    // Pesan error diberi waktu lebih lama.
+    const duration = isError ? 6000 : 1500;
+
+    setTimeout(() => {
+        toast.classList.remove('animate-toast-in');
+        toast.classList.add('animate-toast-out');
+
+        setTimeout(() => {
+            toast.remove();
+        }, 250);
+    }, duration);
+}

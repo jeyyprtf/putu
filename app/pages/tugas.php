@@ -92,14 +92,42 @@ $courseNames = array_values(array_unique(array_column($tasks, 'course')));
                     </h1>
                 </section>
 
-                <?php if ($ok !== ''): ?>
-                    <p role="status" class="mb-3 rounded-2xl border border-lime-300/30 bg-lime-300/10 px-4 py-3 text-sm text-lime-200"><?= e($ok) ?></p>
-                <?php endif; ?>
-                <?php if ($error !== ''): ?>
-                    <p role="alert" class="mb-3 text-xs leading-6 text-red-300"><?= e($error) ?></p>
-                <?php endif; ?>
-                <?php if ($galatMuat !== ''): ?>
-                    <p role="alert" class="mb-3 rounded-2xl border border-red-300/30 bg-red-300/10 px-4 py-3 text-sm text-red-300"><?= e($galatMuat) ?></p>
+                <?php
+                $toast = null;
+
+                if ($ok !== '') {
+                    $toast = [
+                        'type' => 'success',
+                        'message' => $ok,
+                    ];
+                } elseif ($error !== '') {
+                    $toast = [
+                        'type' => 'error',
+                        'message' => $error,
+                    ];
+                } elseif ($galatMuat !== '') {
+                    $toast = [
+                        'type' => 'error',
+                        'message' => $galatMuat,
+                    ];
+                }
+                ?>
+
+                <?php if ($toast !== null): ?>
+                    <div
+                        id="toast"
+                        role="<?= $toast['type'] === 'success' ? 'status' : 'alert' ?>"
+                        class="fixed left-1/2 top-5 z-[100] w-[calc(100%-2rem)] max-w-md
+                            -translate-x-1/2 rounded-2xl border px-4 py-3 shadow-2xl
+                            backdrop-blur-xl animate-toast-in
+                            <?= $toast['type'] === 'success'
+                                ? 'border-lime-300/30 bg-stone-900/95 text-lime-200'
+                                : 'border-red-300/30 bg-stone-900/95 text-red-300' ?>"
+                    >
+                        <p class="text-sm font-medium">
+                            <?= e($toast['message']) ?>
+                        </p>
+                    </div>
                 <?php endif; ?>
 
                 <div class="mb-3 flex items-center justify-between gap-2">

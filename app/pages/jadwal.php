@@ -41,6 +41,9 @@ $classesByDay = jadwal_per_hari($jadwal);
                     </div>
                     <span class="tag border border-stone-800 bg-stone-900 text-stone-300"><?= e($user['nama_kelas'] ?? 'Kelasmu') ?></span>
                 </section>
+                <?php if (($user['role'] ?? '') === 'admin'): ?>
+                    <p class="mb-5"><a class="inline-block rounded-xl bg-lime-500 hover:bg-lime px-5 py-3 font-semibold text-stone-950" href="<?= e(url('adminJadwal')) ?>">Kelola jadwal</a></p>
+                <?php endif; ?>
                 <?php if ($galatMuat !== ''): ?>
                     <p role="alert" class="mb-4 rounded-2xl border border-red-300/30 bg-red-300/10 px-4 py-3 text-sm text-red-300"><?= e($galatMuat) ?></p>
                 <?php elseif ($jadwal === []): ?>

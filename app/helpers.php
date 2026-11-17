@@ -59,13 +59,23 @@ function redirect(string $to): never
     exit;
 }
 
+/**
+ * URL dasar aplikasi, tidak tergantung kedalaman folder halaman.
+ * Mendukung /index.php, /app/pages/jadwal.php, dan /app/pages/admin/jadwal.php,
+ * termasuk aplikasi yang dipasang di subfolder (mis. /putu).
+ */
 function base_url(): string
 {
-    $directory = dirname($_SERVER['SCRIPT_NAME'] ?? '/index.php');
-    if (str_ends_with($directory, '/app/pages')) {
-        $directory = dirname($directory, 2);
+    $script = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '/index.php');
+
+    // Bila membuka halaman langsung di app/pages/ atau app/pages/admin/.
+    if (preg_match('~^(.*)/app/pages/(?:admin/)?[^/]+\.php$~', $script, $match)) {
+        return rtrim($match[1], '/');
     }
-    return rtrim($directory, '/.');
+
+    // Bila mengakses lewat index.php (termasuk router ?page=...).
+    $directory = dirname($script);
+    return $directory === '/' || $directory === '.' ? '' : rtrim($directory, '/');
 }
 
 function url(string $page = '', array $query = []): string

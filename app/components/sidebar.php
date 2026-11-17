@@ -50,7 +50,7 @@
         </details>
         <form action="<?= e(url('logout')) ?>" method="POST">
             <?= csrf_field() ?>
-            <button type="submit" class="nav-link w-full">
+            <button type="submit" class="nav-link w-full ">
                 <?= icon('logout') ?>Keluar
             </button>
         </form>
