@@ -2,7 +2,23 @@
 $page = 'jadwal';
 $title = 'Jadwal kuliah';
 require_once __DIR__ . '/../bootstrap.php';
-require_login();
+require_once __DIR__ . '/../jadwal.php';
+
+$user = require_login();
+
+// 0 = Senin ... 6 = Minggu (sama dengan indeks yang dipakai app.js).
+$days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+$todayIndex = (int) (new DateTimeImmutable('today', new DateTimeZone('Asia/Jakarta')))->format('N') - 1;
+
+$jadwal = [];
+$galatMuat = '';
+try {
+    $jadwal = jadwal_daftar((int) $user['id_kelas']); // id_kelas dari sesi, bukan dari URL
+} catch (Throwable $e) {
+    error_log('[jadwal] ' . $e->getMessage());
+    $galatMuat = 'Jadwal belum bisa dimuat. Coba muat ulang halaman.';
+}
+$classesByDay = jadwal_per_hari($jadwal);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -23,8 +39,15 @@ require_login();
                             Jadwal kuliah<span class="text-lime-300">.</span>
                         </h1>
                     </div>
-                    <span class="tag border border-stone-800 bg-stone-900 text-stone-300">Semester 3 · SIB 2B</span>
+                    <span class="tag border border-stone-800 bg-stone-900 text-stone-300"><?= e($user['nama_kelas'] ?? 'Kelasmu') ?></span>
                 </section>
+                <?php if ($galatMuat !== ''): ?>
+                    <p role="alert" class="mb-4 rounded-2xl border border-red-300/30 bg-red-300/10 px-4 py-3 text-sm text-red-300"><?= e($galatMuat) ?></p>
+                <?php elseif ($jadwal === []): ?>
+                    <p role="status" class="mb-4 rounded-2xl border border-stone-800 bg-stone-900 px-4 py-3 text-sm text-stone-300">
+                        Belum ada jadwal kuliah untuk kelasmu. Jadwal akan muncul di sini setelah diisi.
+                    </p>
+                <?php endif; ?>
                 <div class="mb-3 flex  items-center justify-between gap-4">
                     <h2 class="text-lg font-semibold">
                         Agenda mingguan

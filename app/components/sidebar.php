@@ -1,4 +1,4 @@
-<aside class="fixed inset-y-3 left-3 z-40 hidden w-60 flex-col rounded-3xl border border-stone-800 bg-stone-900/60 p-5 lg:flex">
+<aside class="fixed inset-y-3 left-3 z-40 hidden w-60 flex-col overflow-y-auto rounded-3xl border border-stone-800 bg-stone-900/60 p-5 lg:flex">
     <a href="<?= e(url()) ?>" class="flex items-center px-5 py-2" aria-label="PUTU beranda">
         <span class="text-3xl font-extrabold tracking-tighter">putu<span class="text-lime-500">.</span></span>
     </a>
@@ -31,6 +31,9 @@
         </a>
         <a href="<?= e(url('pengumuman')) ?>" class="nav-link" <?= $page === 'pengumuman' ? 'aria-current="page"' : '' ?>>
             <?= icon('bell') ?><span>Pengumuman</span>
+        </a>
+        <a href="<?= e(url('anggota')) ?>" class="nav-link" <?= $page === 'anggota' ? 'aria-current="page"' : '' ?>>
+            <?= icon('users') ?><span>Anggota</span>
         </a>
     </nav>
     <div class="mt-auto space-y-3 pt-8">

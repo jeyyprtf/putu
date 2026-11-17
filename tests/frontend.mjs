@@ -173,12 +173,19 @@ try {
     assert.equal(await evaluate('document.querySelector("#profile-name").value'), 'Juan');
     await navigate('pengaturan', true);
     assert.equal(await evaluate('document.querySelector("#profile-email").value'), 'juan@example.com');
-    for (const page of ['', 'login', 'register', 'dashboard', 'tugas', 'jadwal', 'pengumuman', 'pengaturan']) {
+    for (const page of ['', 'login', 'register', 'gabung', 'dashboard', 'tugas', 'jadwal', 'pengumuman', 'pengaturan', 'not-found']) {
         await navigate(page);
         for (const width of [320, 390, 768, 1024, 1440]) {
             await send('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 1, mobile: width < 768 });
             await wait(80);
             assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true, `${page} overflow at ${width}px`);
+            if (['dashboard', 'tugas', 'jadwal', 'pengumuman', 'pengaturan'].includes(page)) {
+                assert.equal(await evaluate('getComputedStyle(document.querySelector(".dock")).display !== "none"'), width < 1024, `Mobile dock breakpoint at ${width}px`);
+                assert.equal(await evaluate('getComputedStyle(document.querySelector("aside")).display !== "none"'), width >= 1024, `Sidebar breakpoint at ${width}px`);
+                if (width < 1024) {
+                    assert.equal(await evaluate('document.querySelector(".dock details summary").getBoundingClientRect().height >= 44'), true, 'Mobile menu keeps a 44px touch target');
+                }
+            }
             if (page === 'tugas') {
                 await chooseCourse('Algoritma & Struktur Data');
                 assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true, 'Long course names fit the toolbar');

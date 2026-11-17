@@ -91,16 +91,16 @@ if (is_post() && $mode !== '') {
 
                     <?php if ($mode === ''): ?>
                         <div class="mt-4 lg:mt-8 flex w-full flex-col items-center justify-center gap-4 sm:mt-10">
-                            <a href="<?= e(url('gabung', ['mode' => 'create'])) ?>" class="group flex min-h-50 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-white/10 bg-lime-700/20 p-8 text-center transition-all duration-300 hover:bg-lime-500">
-                                <p class="text-4xl font-bold text-white/80 transition-all duration-300 group-hover:text-white">Buat Kelas</p>
+                            <a href="<?= e(url('gabung', ['mode' => 'create'])) ?>" class="group flex min-h-50 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-white/10 bg-lime-700/20 p-5 text-center transition-all duration-300 hover:bg-lime-500 sm:p-8">
+                                <p class="text-3xl font-bold text-white/80 transition-all duration-300 group-hover:text-white sm:text-4xl">Buat Kelas</p>
                                 <p class="text-base font-semibold text-white/50 transition-all duration-300 group-hover:text-white/80">Jika kamu admin kelas <br> kamu bisa bikin kelas baru disini.</p>
                             </a>
                             <div class="relative flex w-full items-center justify-center">
                                 <span class="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-white/20"></span>
                                 <span class="relative bg-stone-950 px-4 text-white/40">atau</span>
                             </div>
-                            <a href="<?= e(url('gabung', ['mode' => 'join'])) ?>" class="group flex min-h-50 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-white/10 bg-stone-700/20 p-8 text-center transition-all duration-300 hover:bg-stone-500/50">
-                                <p class="text-4xl font-bold text-white/80 transition-all duration-300 group-hover:text-white">Gabung Kelas</p>
+                            <a href="<?= e(url('gabung', ['mode' => 'join'])) ?>" class="group flex min-h-50 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-white/10 bg-stone-700/20 p-5 text-center transition-all duration-300 hover:bg-stone-500/50 sm:p-8">
+                                <p class="text-3xl font-bold text-white/80 transition-all duration-300 group-hover:text-white sm:text-4xl">Gabung Kelas</p>
                                 <p class="text-base font-semibold text-white/50 transition-all duration-300 group-hover:text-white/80">Masukkan kode invitation dari admin kelas kamu untuk bergabung kelas.</p>
                             </a>
                         </div>

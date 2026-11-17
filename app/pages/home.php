@@ -37,7 +37,7 @@ require_once __DIR__ . '/../bootstrap.php';
                     <p class="text-base text-stone-100/80 max-w-lg">
                         Tugas, jadwal, dan kabar kelas. Satu ruang sederhana untuk merapikan hari, biar kamu punya ruang untuk hal yang berarti.
                     </p>
-                    <div class="mt-2 gap-2 flex items-center">
+                    <div class="mt-2 flex flex-wrap items-center gap-2">
                         <a href="<?= e(url('register')) ?>" class="min-h-11 bg-lime-500 py-2 px-5 rounded-2xl gap-2 flex items-center group hover:bg-lime-300 transition duration-300 cursor-pointer">
                             <span class="text-lime-950 font-semibold tracking-tighter hover:text-black transition duration-300">Mulai Langkahmu</span> <span aria-hidden="true" class="w-4 h-4 inline-block ml-1 transition-transform duration-300 group-hover:translate-x-1 text-lime-950">
                             <?php require __DIR__ . '/../../resources/icons/arrowRight.svg'; ?>

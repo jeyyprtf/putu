@@ -2,7 +2,53 @@
 $page = 'dashboard';
 $title = 'Ringkasan';
 require_once __DIR__ . '/../bootstrap.php';
-require_login();
+require_once __DIR__ . '/../jadwal.php';
+require_once __DIR__ . '/../tugas.php';
+
+// 1. Wajib login & sudah tergabung di kelas
+$user = require_login();
+$idUser = (int) $user['id_user'];
+$kelasId = (int) $user['id_kelas'];
+
+// 2. Indeks hari ini (0 = Senin ... 6 = Minggu)
+$days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+$todayIndex = (int) (new DateTimeImmutable('today', new DateTimeZone('Asia/Jakarta')))->format('N') - 1;
+
+// 3. Muat jadwal hari ini dari database
+$todayClasses = [];
+try {
+    $jadwalSemua = jadwal_daftar($kelasId);
+    $classesByDay = jadwal_per_hari($jadwalSemua);
+    $todayClasses = $classesByDay[$todayIndex] ?? [];
+} catch (Throwable $e) {
+    error_log('[dashboard:jadwal] ' . $e->getMessage());
+}
+
+// 4. Muat daftar tugas & hitung progres dari database
+$tasks = [];
+try {
+    $tasks = tugas_daftar($idUser, $kelasId);
+} catch (Throwable $e) {
+    error_log('[dashboard:tugas] ' . $e->getMessage());
+}
+
+$taskCounts = tugas_hitung($tasks);
+$percent = $taskCounts['all'] > 0
+    ? (int) round(($taskCounts['done'] / $taskCounts['all']) * 100)
+    : 0;
+
+// 5. Urutkan tugas berdasarkan deadline terdekat & ambil 5 tugas aktif teratas
+$deadlineTasks = $tasks;
+usort($deadlineTasks, static fn(array $a, array $b): int => strcmp((string) ($a['deadline'] ?? ''), (string) ($b['deadline'] ?? '')));
+
+$activeTasks = array_values(array_filter(
+    $deadlineTasks,
+    static fn(array $t): bool => ($t['status'] ?? '') !== 'done'
+));
+$nearestTaskIds = array_column(array_slice($activeTasks, 0, 5), 'id');
+
+// 6. Pastikan data nama profil mengikuti user yang sedang login
+$profile['name'] = $user['nama'] ?? ($profile['name'] ?? 'Mahasiswa');
 ?>
 <!DOCTYPE html>
 <html lang="id">
