@@ -48,11 +48,19 @@
                 Pilih tugas untuk melihat detail dan ubah statusnya. Sebagian data masih contoh sementara fitur database dikerjakan bertahap.
             </p>
         </details>
-        <form action="<?= e(url('logout')) ?>" method="POST">
+        <form
+            action="<?= e(url('logout')) ?>"
+            method="POST"
+            data-logout-confirm
+        >
             <?= csrf_field() ?>
-            <button type="submit" class="nav-link w-full ">
+
+            <button type="submit" class="nav-link w-full text-red-400!">
                 <?= icon('logout') ?>Keluar
             </button>
         </form>
+
     </div>
 </aside>
+
+<?php require_once __DIR__ . '/logout-confirm.php'; ?>
