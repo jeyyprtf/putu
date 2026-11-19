@@ -31,6 +31,7 @@ function tugas_daftar(int $idUser, int $kelasId): array
          LEFT JOIN progres_tugas AS p
                 ON p.id_tugas = t.id_tugas AND p.id_user = :user
          WHERE m.id_kelas = :kelas
+             AND t.aktif = TRUE
          ORDER BY t.deadline ASC, t.id_tugas ASC",
         ['user' => $idUser, 'kelas' => $kelasId]
     );

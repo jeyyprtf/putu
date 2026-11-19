@@ -21,11 +21,11 @@
             Menandai selesai mencatat progres pribadi. Pengumpulan tetap melalui LMS.
         </p>
     </details>
-    <div class="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-stone-800 pt-3">
+    <div class="mt-3 flex flex-col items-stretch gap-3 border-t border-stone-800 pt-3 lg:flex-row lg:items-center">
         <p class="flex items-center gap-2 text-xs text-stone-400">
             <?= icon('calendar', 'size-4') ?><?= e(date_id($task['deadline'])) ?>
         </p>
-        <form action="<?= e(url('tugas')) ?>" method="POST" class="flex items-center gap-2">
+        <form action="<?= e(url('tugas')) ?>" method="POST" class="grid grid-cols-2 gap-2 lg:ml-auto lg:flex lg:items-center"">
             <?= csrf_field() ?>
             <input type="hidden" name="aksi" value="status">
             <input type="hidden" name="id_tugas" value="<?= e($task['id']) ?>">
@@ -47,5 +47,54 @@
                 Simpan
             </button>
         </form>
+
+        <?php if (($user['role'] ?? '') === 'admin'): ?>
+
+            <div class="grid grid-cols-2 gap-2 lg:flex lg:items-center">
+
+                <!-- EDIT -->
+                <a
+                    href="<?= e(url('admin/tugas', ['edit' => $task['id']])) ?>"
+                    class="inline-flex min-h-11 w-full items-center justify-center gap-2
+                        rounded-xl border border-stone-700 px-3 py-2
+                        text-xs font-semibold text-stone-300
+                        transition hover:bg-stone-800 lg:w-auto"
+                >
+                    <?= icon('edit', 'size-4') ?>
+                    Edit
+                </a>
+
+                <!-- NONAKTIFKAN -->
+                <form
+                    action="<?= e(url('admin/tugas')) ?>"
+                    method="POST"
+                    onsubmit="return confirm('Yakin ingin menonaktifkan tugas ini? Tugas akan disembunyikan dari daftar.');"
+                >
+                    <?= csrf_field() ?>
+
+                    <input type="hidden" name="aksi" value="nonaktifkan">
+                    <input
+                        type="hidden"
+                        name="id_tugas"
+                        value="<?= e($task['id']) ?>"
+                    >
+
+                    <button
+                        type="submit"
+                        class="inline-flex min-h-11 w-full items-center justify-center gap-2
+                            rounded-xl border border-red-400/40 px-3 py-2
+                            text-xs font-semibold text-red-400 transition
+                            hover:bg-red-400/10"
+                    >
+                        <?= icon('trash', 'size-4') ?>
+                        Hapus
+                    </button>
+                </form>
+
+            </div>
+
+        <?php endif; ?>
+
     </div>
+    
 </article>

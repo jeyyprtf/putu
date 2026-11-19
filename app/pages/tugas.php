@@ -86,10 +86,21 @@ $courseNames = array_values(array_unique(array_column($tasks, 'course')));
         <div class="lg:ml-68">
             <?php require __DIR__ . '/../components/navbar.php'; ?>
             <main id="konten" class="workspace-content mx-auto max-w-7xl px-5 py-8 pt-4 sm:px-8 sm:pt-8 lg:px-10 lg:py-10 lg:pt-10">
-                <section class="mb-4">
-                    <h1 class="mt-1 text-3xl font-semibold tracking-tight sm:mt-0 sm:text-4xl">
+                <section class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <h1 class="mt-1 text-3xl font-semibold tracking-tight sm:mt-0 sm:text-4xl mb-4">
                         Tugas saya<span class="text-lime-300">.</span>
                     </h1>
+
+                    <?php if (($user['role'] ?? '') === 'admin'): ?>
+                        <a
+                            href="<?= e(url('admin/tugas')) ?>"
+                            class="button inline-flex items-center gap-2"
+                        >
+                            <?= icon('plus', 'size-4') ?>
+                            Tambah tugas
+                        </a>
+                    <?php endif; ?>
+
                 </section>
 
                 <?php
@@ -130,7 +141,7 @@ $courseNames = array_values(array_unique(array_column($tasks, 'course')));
                     </div>
                 <?php endif; ?>
 
-                <div class="mb-3 flex items-center justify-between gap-2">
+                <div class="mt-5 mb-3 flex items-center justify-between gap-2">
                     <p id="task-result" role="status" aria-live="polite" class="shrink-0 text-xs text-stone-400">
                         <?= $taskCounts['all'] ?> tugas
                     </p>
@@ -147,7 +158,7 @@ $courseNames = array_values(array_unique(array_column($tasks, 'course')));
                     </div>
                 </div>
 
-                <section id="task-list" aria-label="Daftar tugas" data-today="<?= e((new DateTimeImmutable('today'))->format('Y-m-d')) ?>" class="grid items-start gap-3 sm:gap-4 xl:grid-cols-2">
+                <section id="task-list" aria-label="Daftar tugas" data-today="<?= e((new DateTimeImmutable('today'))->format('Y-m-d')) ?>" class="grid items-start gap-3 sm:gap-4">
                     <?php foreach ($tasks as $task): ?>
                         <?php require __DIR__ . '/../components/task-card.php'; ?>
                     <?php endforeach; ?>
@@ -177,11 +188,6 @@ $courseNames = array_values(array_unique(array_column($tasks, 'course')));
                 </div>
                 <p id="task-feedback" role="status" aria-live="polite" class="mt-3 text-xs leading-6 text-lime-200">
                 </p>
-                <noscript>
-                    <p class="mt-5 text-sm text-amber-200">
-                        Aktifkan JavaScript untuk mencoba filter. Mengubah status tetap bisa lewat tombol Simpan pada tiap tugas.
-                    </p>
-                </noscript>
             </main>
         </div>
         <dialog id="course-drawer" class="course-drawer" aria-labelledby="course-drawer-title">
