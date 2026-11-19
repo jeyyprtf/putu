@@ -66,16 +66,29 @@ function redirect(string $to): never
  */
 function base_url(): string
 {
-    $script = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '/index.php');
+    $script = str_replace(
+        '\\',
+        '/',
+        $_SERVER['SCRIPT_NAME'] ?? '/index.php'
+    );
 
-    // Bila membuka halaman langsung di app/pages/ atau app/pages/admin/.
-    if (preg_match('~^(.*)/app/pages/(?:admin/)?[^/]+\.php$~', $script, $match)) {
+    // Halaman langsung dari app/pages/
+    if (preg_match(
+        '~^(.*)/app/pages/(?:admin/)?[^/]+\.php$~',
+        $script,
+        $match
+    )) {
         return rtrim($match[1], '/');
     }
 
-    // Bila mengakses lewat index.php (termasuk router ?page=...).
-    $directory = dirname($script);
-    return $directory === '/' || $directory === '.' ? '' : rtrim($directory, '/');
+    // Halaman dari index.php
+    $directory = str_replace('\\', '/', dirname($script));
+
+    if ($directory === '/' || $directory === '.' || $directory === '') {
+        return '';
+    }
+
+    return rtrim($directory, '/');
 }
 
 function url(string $page = '', array $query = []): string
