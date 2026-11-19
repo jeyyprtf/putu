@@ -13,12 +13,13 @@ $dockMenu = [
 
 $dockIsAdmin = ($user['role'] ?? '') === 'admin';
 
+// dock.php: bedakan tujuan URL dan penanda halaman aktif.
 if ($dockIsAdmin) {
-    $dockMenu[] = ['route' => 'admin', 'icon' => 'grid', 'label' => 'Halaman admin'];
+    $dockMenu[] = ['route' => 'admin/admin', 'page' => 'admin', 'icon' => 'grid', 'label' => 'Halaman admin'];
 }
 
-$dockLainnyaAktif = in_array($page, array_column($dockMenu, 'route'), true)
-    || ($dockIsAdmin && str_starts_with($page, 'admin/'));
+$dockLainnyaAktif = in_array($page, ['anggota', 'pengaturan'], true)
+    || ($dockIsAdmin && ($page === 'admin' || str_starts_with($page, 'admin/')));
 ?>
 
 <nav
@@ -80,7 +81,7 @@ $dockLainnyaAktif = in_array($page, array_column($dockMenu, 'route'), true)
         <?php foreach ($dockMenu as $item): ?>
             <a
                 href="<?= e(url($item['route'])) ?>"
-                <?= $page === $item['route'] ? 'aria-current="page"' : '' ?>
+                <?= $page === ($item['page'] ?? $item['route']) ? 'aria-current="page"' : '' ?>
                 class="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm
                        text-stone-300 hover:bg-stone-800
                        aria-[current=page]:bg-lime-500/15 aria-[current=page]:text-lime-300"

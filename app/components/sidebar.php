@@ -67,13 +67,9 @@
                 </a>
 
                 <?php if ($sidebarIsAdmin): ?>
-                    <a
-                        href="<?= e(url('admin')) ?>"
-                        class="nav-link"
-                        <?= $page === 'admin' ? 'aria-current="page"' : '' ?>
-                    >
-                        <?= icon('grid') ?>
-                        <span>Halaman admin</span>
+                    <!-- sidebar.php: gunakan di dalam blok khusus admin -->
+                    <a href="<?= e(url('admin/admin')) ?>" class="nav-link" <?= $page === 'admin' ? 'aria-current="page"' : '' ?>>
+                        <?= icon('grid') ?><span>Halaman admin</span>
                     </a>
                 <?php endif; ?>
             </div>
