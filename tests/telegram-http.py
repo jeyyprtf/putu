@@ -50,7 +50,7 @@ _, html, _ = request(browser, '/app/pages/register.php', {
 _, html, _ = request(browser, '/app/pages/gabung.php?mode=create')
 _, html, _ = request(browser, '/app/pages/gabung.php?mode=create', {'_csrf': csrf(html), 'name': 'Telegram Test Class'})
 _, html, _ = request(browser, settings)
-assert 'Notifikasi Telegram' in html and 'Telegram belum terhubung' in html
+assert 'Notifikasi' in html and 'Telegram belum terhubung' in html
 assert re.search(r'name="reminder_hours"[^>]*value="24"', html)
 assert '123:test' not in html
 assert 'value="telegram_test"' not in html, 'Tombol tes hanya untuk akun terhubung.'
@@ -90,7 +90,7 @@ assert status == 302
 assert re.fullmatch(r'https://t.me/putu_pbl_bot\?start=[a-f0-9]{48}', headers['Location'])
 assert headers['Referrer-Policy'] == 'no-referrer'
 _, html, _ = request(browser, settings, {'_csrf': csrf(html), 'aksi': 'telegram_disconnect'})
-assert 'Koneksi Telegram diputus.' in html
+assert 'Koneksi notifikasi diputus.' in html
 assert request(anonymous, '/bin/telegram-worker.php')[0] == 404
 print('PASS: auth, CSRF, preference validation/persistence, per-user isolation, connect redirect, disconnect, CLI guard; no Telegram requests.')
 print('Test login for local visual QA: ' + email)

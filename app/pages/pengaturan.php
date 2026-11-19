@@ -3,7 +3,9 @@ $page = 'pengaturan';
 $title = 'Profil & pengaturan';
 require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../telegram-api.php';
+require_once __DIR__ . '/../notification-channels.php';
 $user = require_login();
+$gateway = notification_gateway(['action' => 'status']);
 $telegram = null;
 $telegramError = '';
 $telegramOk = '';
@@ -23,6 +25,40 @@ try {
             telegram_preferences((int) $user['id_user'], post_str('reminder_hours'),
                 post_str('reminders_enabled') === '1', post_str('news_enabled') === '1');
             redirect(url('pengaturan', ['telegram' => 'saved']));
+        } elseif (post_str('aksi') === 'whatsapp_connect') {
+            header('Referrer-Policy: no-referrer');
+            redirect(notification_whatsapp_url((int) $user['id_user'], $gateway['sender'] ?? ''));
+        } elseif (in_array(post_str('aksi'), ['whatsapp_disconnect', 'web_disconnect'], true)) {
+            $channel = post_str('aksi') === 'web_disconnect' ? 'web' : 'whatsapp';
+            notification_disconnect((int) $user['id_user'], $channel);
+            redirect(url('pengaturan', ['telegram' => 'disconnected']));
+        } elseif (post_str('aksi') === 'web_connect') {
+            if (empty($gateway['publicKey'])) {
+                throw new InvalidArgumentException('Notifikasi browser belum siap.');
+            }
+            $_SESSION['notification_web'] ??= bin2hex(random_bytes(32));
+            notification_web_save((int) $user['id_user'], $_SESSION['notification_web'], post_str('subscription'));
+            redirect(url('pengaturan', ['telegram' => 'saved']));
+        } elseif (in_array(post_str('aksi'), ['whatsapp_test', 'web_test'], true)) {
+            if (time() - ($_SESSION['telegram_test_at'] ?? 0) < 30) {
+                throw new InvalidArgumentException('Tunggu 30 detik sebelum mengirim pesan tes lagi.');
+            }
+            $channel = post_str('aksi') === 'web_test' ? 'web' : 'whatsapp';
+            $target = $channel === 'web' ? ($telegram['web_subscription'] ?? null) : ($telegram['wa_chat'] ?? null);
+            if ($target === null) {
+                throw new InvalidArgumentException('Aktifkan kanal ini sebelum mengirim pesan tes.');
+            }
+            $_SESSION['telegram_test_at'] = time();
+            try {
+                notification_send_gateway($channel, $target, 'Tes notifikasi PUTU berhasil diterima.', 'app/pages/pengaturan.php', $telegram['wa_sender'] ?? '');
+            } catch (RuntimeException $error) {
+                if ($channel === 'web' && in_array($error->getCode(), [404, 410], true)) {
+                    notification_disconnect((int) $user['id_user'], 'web');
+                    redirect(url('pengaturan', ['telegram' => 'expired']));
+                }
+                throw new InvalidArgumentException('Pesan tes gagal dikirim. Periksa koneksi kanal lalu coba lagi.');
+            }
+            redirect(url('pengaturan', ['telegram' => 'accepted']));
         } elseif (post_str('aksi') === 'telegram_test') {
             if (time() - ($_SESSION['telegram_test_at'] ?? 0) < 30) {
                 throw new InvalidArgumentException('Tunggu 30 detik sebelum mengirim pesan tes lagi.');
@@ -37,9 +73,14 @@ try {
         }
     }
     $status = $_GET['telegram'] ?? '';
-    $telegramOk = $status === 'saved' ? 'Pengaturan notifikasi disimpan.'
-        : ($status === 'disconnected' ? 'Koneksi Telegram diputus.'
-        : ($status === 'tested' ? 'Pesan tes berhasil dikirim. Cek chat bot PUTU di Telegram.' : ''));
+    $telegramOk = match ($status) {
+        'saved' => 'Pengaturan notifikasi disimpan.',
+        'disconnected' => 'Koneksi notifikasi diputus.',
+        'tested' => 'Pesan tes berhasil dikirim. Cek chat bot PUTU di Telegram.',
+        'accepted' => 'Pesan tes diterima layanan pengiriman. Cek perangkatmu.',
+        'expired' => 'Langganan browser kedaluwarsa. Aktifkan lagi pada perangkatmu.',
+        default => '',
+    };
 } catch (InvalidArgumentException $e) {
     $telegramError = $e->getMessage();
 } catch (TelegramApiException $e) {
@@ -117,7 +158,7 @@ try {
                     </section>
                 </div>
                 <section aria-labelledby="telegram-title" class="panel mt-5 rounded-3xl! p-5 sm:p-6">
-                    <h2 id="telegram-title" class="text-base font-semibold">Notifikasi Telegram</h2>
+                    <h2 id="telegram-title" class="text-base font-semibold">Notifikasi</h2>
                     <p class="mt-2 text-sm leading-6 text-stone-400">Pengingat pribadi untuk tugas yang belum selesai dan kabar dari kelasmu.</p>
                     <?php if ($telegramOk !== ''): ?>
                         <p role="status" class="mt-4 text-sm text-lime-200"><?= e($telegramOk) ?></p>
@@ -146,7 +187,7 @@ try {
                                 <p id="reminder-hours-hint" class="mt-2 text-xs leading-6 text-stone-400">1–168 jam, berlaku untuk semua tugasmu. Contoh: 24 untuk sehari sebelumnya. Satu pengingat per tugas; jika deadline berubah, pengingat dapat dikirim lagi.</p>
                             </div>
                             <label class="flex min-h-11 items-center gap-3 text-sm"><input name="reminders_enabled" type="checkbox" value="1" <?= $telegram['reminders_enabled'] ? 'checked' : '' ?> class="size-4 accent-lime-500">Aktifkan pengingat deadline</label>
-                            <label class="flex min-h-11 items-center gap-3 text-sm"><input name="news_enabled" type="checkbox" value="1" <?= $telegram['news_enabled'] ? 'checked' : '' ?> class="size-4 accent-lime-500">Kirim pengumuman kelas ke Telegram</label>
+                            <label class="flex min-h-11 items-center gap-3 text-sm"><input name="news_enabled" type="checkbox" value="1" <?= $telegram['news_enabled'] ? 'checked' : '' ?> class="size-4 accent-lime-500">Kirim pengumuman kelas ke kanal yang terhubung</label>
                             <button type="submit" class="button">Simpan notifikasi</button>
                         </form>
                         <?php if ($telegram['chat_id'] !== null): ?>
@@ -160,6 +201,7 @@ try {
                                 <button name="aksi" value="telegram_disconnect" class="button button-secondary">Putuskan koneksi Telegram</button>
                             </form>
                         <?php endif; ?>
+                        <?php require __DIR__ . '/../components/notification-channels.php'; ?>
                     <?php endif; ?>
                 </section>
             </main>
