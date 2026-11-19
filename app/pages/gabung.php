@@ -1,161 +1,396 @@
+
 <?php
+/**
+ * Halaman Gabung / Buat Kelas.
+ *
+ * 1. Guard: wajib login, belum memiliki kelas
+ * 2. Pilih mode: join / create
+ * 3. Proses POST
+ * 4. Render halaman
+ *
+ * Semua fungsi database tetap menggunakan app/kelas.php.
+ */
+
 $page = 'gabung';
 $title = 'Gabung kelas';
+
 require_once __DIR__ . '/../bootstrap.php';
 
-$user = require_login(false); // boleh tanpa kelas, tapi harus login
+// ------------------------------------------------ Guard
 
-// Sudah punya kelas: tidak perlu di halaman ini lagi.
+$user = require_login(false);
+
 if ($user['id_kelas'] !== null) {
     redirect(url('dashboard'));
 }
 
-$userName = $user['nama'];
+$idUser = (int) $user['id_user'];
+$userName = $user['nama'] ?? 'Mahasiswa';
 
-// Mode dibaca dari URL: gabung.php?mode=create atau gabung.php?mode=join
-$mode = $_GET['mode'] ?? '';
-if (!in_array($mode, ['create', 'join'], true)) {
-    $mode = '';
-}
+// ------------------------------------------------ Mode
+
+// Default: Gabung kelas
+$modeRaw = $_GET['mode'] ?? 'join';
+$mode = is_string($modeRaw) && $modeRaw === 'create'
+    ? 'create'
+    : 'join';
+
+// ------------------------------------------------ Form state
 
 $notice = '';
 $noticeIsError = false;
 
-if (is_post() && $mode !== '') {
+$className = '';
+$classCode = '';
+
+// ------------------------------------------------ Aksi POST
+
+if (is_post()) {
     try {
         if (!csrf_verify()) {
             $notice = 'Sesi form kedaluwarsa. Muat ulang halaman lalu coba lagi.';
             $noticeIsError = true;
+
         } elseif ($mode === 'create') {
-            $name = post_str('name');
-            $len = text_length($name);
+
+            $className = post_str('name');
+            $len = text_length($className);
 
             if ($len === null || $len < 3 || $len > 100) {
                 $notice = 'Nama kelas harus 3–100 karakter.';
                 $noticeIsError = true;
-            } elseif (kelas_buat((int) $user['id_user'], $name) === null) {
+
+            } elseif (kelas_buat($idUser, $className) === null) {
                 $notice = 'Kamu sudah tergabung di sebuah kelas.';
                 $noticeIsError = true;
+
             } else {
-                // Berhasil: user kini admin kelas. Kode gabung tampil di halaman pengaturan.
                 redirect(url('dashboard'));
             }
-        } else {
-            // Kode disimpan huruf besar; spasi/tanda hubung dibuang agar input lebih toleran.
-            $code = strtoupper(preg_replace('/[\s-]+/', '', post_str('code')));
 
-            if ($code === '' || strlen($code) > 16) {
+        } else {
+
+            $classCode = strtoupper(
+                preg_replace('/[\s-]+/', '', post_str('code'))
+            );
+
+            if ($classCode === '' || strlen($classCode) > 16) {
                 $notice = 'Kode kelas wajib diisi.';
                 $noticeIsError = true;
-            } elseif (!kelas_gabung((int) $user['id_user'], $code)) {
+
+            } elseif (!kelas_gabung($idUser, $classCode)) {
                 $notice = 'Kode kelas tidak ditemukan.';
                 $noticeIsError = true;
+
             } else {
                 redirect(url('dashboard'));
             }
         }
+
     } catch (Throwable $e) {
         error_log('[gabung] ' . $e->getMessage());
+
         $notice = 'Terjadi kesalahan di server. Coba lagi nanti.';
         $noticeIsError = true;
     }
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
-    <head>
-        <?php require __DIR__ . '/../components/head.php'; ?>
-    </head>
-    <body class="bg-stone-950 font-sans text-stone-100 antialiased">
-        <div class="grid lg:grid-cols-2">
-            <?php require __DIR__ . '/../components/auth-visual.php'; ?>
-            <div class="relative flex flex-col px-6 py-6 sm:px-10 lg:px-12">
-                <div class="flex items-center justify-between gap-3">
-                    <a href="<?= e(url()) ?>" class="flex min-h-11 items-center gap-2 text-xs text-stone-400 hover:text-lime-200">
-                        <?= icon('back', 'size-4') ?>Kembali ke beranda
-                    </a>
-                    <a href="<?= e(url()) ?>" class="text-2xl font-extrabold tracking-tighter lg:hidden">
-                        putu<span class="text-lime-500">.</span>
-                    </a>
-                </div>
-                <main class="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10 sm:py-14">
-                    <p class="eyebrow">
-                        Putu / Academic workspace
-                    </p>
-                    <h1 class="mt-4 text-3xl font-semibold tracking-tighter sm:text-4xl">
-                        Halo <?= e($userName) ?><span class="text-lime-300">.</span>
-                    </h1>
-                    <p class="mt-3 text-sm leading-7 text-stone-400">
-                        Selamat datang di PUTU. Silahkan join kelas kamu dulu ya! atau kalau kamu admin kelas, kamu bisa buat kelas baru.
-                    </p>
 
-                    <?php if ($mode === ''): ?>
-                        <div class="mt-4 lg:mt-8 flex w-full flex-col items-center justify-center gap-4 sm:mt-10">
-                            <a href="<?= e(url('gabung', ['mode' => 'create'])) ?>" class="group flex min-h-50 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-white/10 bg-lime-700/20 p-5 text-center transition-all duration-300 hover:bg-lime-500 sm:p-8">
-                                <p class="text-3xl font-bold text-white/80 transition-all duration-300 group-hover:text-white sm:text-4xl">Buat Kelas</p>
-                                <p class="text-base font-semibold text-white/50 transition-all duration-300 group-hover:text-white/80">Jika kamu admin kelas <br> kamu bisa bikin kelas baru disini.</p>
-                            </a>
-                            <div class="relative flex w-full items-center justify-center">
-                                <span class="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-white/20"></span>
-                                <span class="relative bg-stone-950 px-4 text-white/40">atau</span>
-                            </div>
-                            <a href="<?= e(url('gabung', ['mode' => 'join'])) ?>" class="group flex min-h-50 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-white/10 bg-stone-700/20 p-5 text-center transition-all duration-300 hover:bg-stone-500/50 sm:p-8">
-                                <p class="text-3xl font-bold text-white/80 transition-all duration-300 group-hover:text-white sm:text-4xl">Gabung Kelas</p>
-                                <p class="text-base font-semibold text-white/50 transition-all duration-300 group-hover:text-white/80">Masukkan kode invitation dari admin kelas kamu untuk bergabung kelas.</p>
-                            </a>
-                        </div>
-                    <?php else: ?>
-                        <div class="mt-8 w-full sm:mt-10">
-                            <a href="<?= e(url('gabung')) ?>" class="mb-6 flex min-h-11 items-center gap-2 text-xs text-stone-400 hover:text-lime-200">
-                                <?= icon('back', 'size-4') ?>Pilih menu lain
-                            </a>
+<head>
+    <?php require __DIR__ . '/../components/head.php'; ?>
+</head>
 
-                            <?php if ($mode === 'create'): ?>
-                                <!-- Form: Buat Kelas -->
-                                <form action="<?= e(url('gabung', ['mode' => 'create'])) ?>" method="POST" class="space-y-5 rounded-4xl border border-white/10 bg-stone-900/60 p-6 sm:p-8">
-                                    <?= csrf_field() ?>
-                                    <div>
-                                        <h2 class="text-xl font-semibold tracking-tight">Buat Kelas Baru<span class="text-lime-300">.</span></h2>
-                                        <p class="mt-1 text-xs leading-6 text-stone-400">Kamu akan menjadi admin kelas ini.</p>
-                                    </div>
-                                    <div>
-                                        <label for="class-name" class="mb-2 block text-xs font-semibold">Nama Kelas</label>
-                                        <input id="class-name" name="name" type="text" required maxlength="100" placeholder="Contoh: Basis Data IF-3A" value="<?= e($_POST['name'] ?? '') ?>" class="field">
-                                    </div>
-                                    <button type="submit" class="button w-full">
-                                        Buat Kelas<?= icon('arrow', 'size-4') ?>
-                                    </button>
-                                </form>
-                            <?php else: ?>
-                                <!-- Form: Gabung Kelas -->
-                                <form action="<?= e(url('gabung', ['mode' => 'join'])) ?>" method="POST" class="space-y-5 rounded-4xl border border-white/10 bg-stone-900/60 p-6 sm:p-8">
-                                    <?= csrf_field() ?>
-                                    <div>
-                                        <h2 class="text-xl font-semibold tracking-tight">Gabung Kelas<span class="text-lime-300">.</span></h2>
-                                        <p class="mt-1 text-xs leading-6 text-stone-400">Minta kode invitation dari admin kelas kamu.</p>
-                                    </div>
-                                    <div>
-                                        <label for="class-code" class="mb-2 block text-xs font-semibold">Kode Kelas</label>
-                                        <input id="class-code" name="code" type="text" required maxlength="16" placeholder="Contoh: K7M2X9QA" autocomplete="off" autocapitalize="characters" spellcheck="false" value="<?= e($_POST['code'] ?? '') ?>" class="field uppercase tracking-[0.2em]">
-                                    </div>
-                                    <button type="submit" class="button w-full">
-                                        Gabung Kelas<?= icon('arrow', 'size-4') ?>
-                                    </button>
-                                </form>
-                            <?php endif; ?>
+<body class="bg-stone-950 font-sans text-stone-100 antialiased">
 
-                            <?php if ($notice !== ''): ?>
-                                <p role="status" aria-live="polite" class="mt-4 text-xs leading-6 <?= $noticeIsError ? 'text-red-300' : 'text-lime-200' ?>">
-                                    <?= e($notice) ?>
-                                </p>
-                            <?php endif; ?>
-                        </div>
-                    <?php endif; ?>
-                </main>
-                <footer class="text-center text-[10px] leading-5 text-stone-500">
-                    © <?= date('Y') ?> PUTU. Make room for what matters.
-                </footer>
+    <!-- LAYOUT UTAMA -->
+    <div class="grid min-h-dvh lg:grid-cols-2">
+
+        <!-- VISUAL KIRI: TETAP -->
+        <?php require __DIR__ . '/../components/auth-visual.php'; ?>
+
+        <!-- KONTEN KANAN -->
+        <div class="relative flex min-h-dvh flex-col px-6 py-6 sm:px-10 lg:px-12">
+
+            <!-- TOP NAVIGATION -->
+            <div class="flex items-center justify-between gap-3">
+
+                <a
+                    href="<?= e(url()) ?>"
+                    class="flex min-h-11 items-center gap-2 text-xs text-stone-400 transition hover:text-lime-200"
+                >
+                    <?= icon('back', 'size-4') ?>
+                    Kembali ke beranda
+                </a>
+
+                <a
+                    href="<?= e(url()) ?>"
+                    class="text-2xl font-extrabold tracking-tighter lg:hidden"
+                    aria-label="PUTU - Beranda"
+                >
+                    putu<span class="text-lime-500">.</span>
+                </a>
+
             </div>
+
+            <!-- MAIN CONTENT -->
+            <main class="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-10 sm:py-14">
+
+                <!-- HEADER -->
+                <section class="mb-7">
+
+                    <p class="eyebrow">
+                        Selamat datang, <?= e($userName) ?>
+                    </p>
+
+                    <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+                        Mulai dari kelasmu<span class="text-lime-300">.</span>
+                    </h1>
+
+                    <p class="mt-3 text-sm leading-7 text-stone-400">
+                        Gabung bersama temanmu atau buat ruang kelas baru.
+                        Tugas, jadwal, dan pengumuman akan muncul setelah
+                        kamu memiliki kelas.
+                    </p>
+
+                </section>
+
+                <!-- TAB PILIHAN -->
+                <nav
+                    aria-label="Pilih cara memulai kelas"
+                    class="mb-5 flex flex-wrap items-center gap-2"
+                >
+
+                    <!-- TAB GABUNG -->
+                    <a
+                        href="<?= e(url('gabung', ['mode' => 'join'])) ?>"
+                        <?= $mode === 'join'
+                            ? 'aria-current="page"'
+                            : '' ?>
+                        class="inline-flex min-h-10 items-center justify-center
+                               rounded-xl border px-4 py-2
+                               text-xs font-medium transition
+                               <?= $mode === 'join'
+                                   ? 'border-lime-300/50 bg-lime-300/10 text-lime-100'
+                                   : 'border-stone-800 bg-stone-900 text-stone-400 hover:border-stone-600 hover:text-stone-100' ?>"
+                    >
+                        Gabung kelas
+                    </a>
+
+                    <!-- TAB BUAT -->
+                    <a
+                        href="<?= e(url('gabung', ['mode' => 'create'])) ?>"
+                        <?= $mode === 'create'
+                            ? 'aria-current="page"'
+                            : '' ?>
+                        class="inline-flex min-h-10 items-center justify-center
+                               rounded-xl border px-4 py-2
+                               text-xs font-medium transition
+                               <?= $mode === 'create'
+                                   ? 'border-lime-300/50 bg-lime-300/10 text-lime-100'
+                                   : 'border-stone-800 bg-stone-900 text-stone-400 hover:border-stone-600 hover:text-stone-100' ?>"
+                    >
+                        Buat kelas
+                    </a>
+
+                </nav>
+
+                <!-- NOTIFIKASI -->
+                <?php if ($notice !== ''): ?>
+                    <div
+                        role="<?= $noticeIsError ? 'alert' : 'status' ?>"
+                        class="mb-5 rounded-2xl border px-4 py-3 text-sm leading-6
+                               <?= $noticeIsError
+                                   ? 'border-red-300/30 bg-red-300/10 text-red-300'
+                                   : 'border-lime-300/30 bg-lime-300/10 text-lime-200' ?>"
+                    >
+                        <?= e($notice) ?>
+                    </div>
+                <?php endif; ?>
+
+                <!-- FORM BERDASARKAN MODE -->
+                <?php if ($mode === 'join'): ?>
+
+                    <!-- ================================ -->
+                    <!-- GABUNG KELAS                     -->
+                    <!-- ================================ -->
+
+                    <section
+                        aria-labelledby="join-title"
+                        class="panel p-5 sm:p-7"
+                    >
+
+                        <div class="mb-6">
+
+                            <h2
+                                id="join-title"
+                                class="text-xl font-semibold tracking-tight"
+                            >
+                                Gabung dengan kode undangan
+                            </h2>
+
+                            <div
+                                class="mt-3 flex size-5 items-center justify-center text-lime-400"
+                                aria-hidden="true"
+                            >
+                                <?= icon('key', 'size-5') ?>
+                            </div>
+
+                        </div>
+
+                        <p class="mb-5 text-sm leading-6 text-stone-400">
+                            Minta kode kelas dari admin atau teman sekelasmu.
+                        </p>
+
+                        <form
+                            action="<?= e(url('gabung', ['mode' => 'join'])) ?>"
+                            method="POST"
+                            class="space-y-5"
+                        >
+
+                            <?= csrf_field() ?>
+
+                            <div>
+
+                                <label
+                                    for="class-code"
+                                    class="mb-2 block text-xs font-semibold"
+                                >
+                                    Kode undangan kelas
+                                </label>
+
+                                <input
+                                    id="class-code"
+                                    name="code"
+                                    type="text"
+                                    required
+                                    maxlength="16"
+                                    placeholder="Masukkan kode dari admin"
+                                    autocomplete="off"
+                                    autocapitalize="characters"
+                                    spellcheck="false"
+                                    value="<?= e($classCode) ?>"
+                                    class="field uppercase tracking-[0.12em]"
+                                >
+
+                            </div>
+
+                            <button
+                                type="submit"
+                                class="button w-full justify-center"
+                            >
+                                Gabung kelas
+                            </button>
+
+                        </form>
+
+                    </section>
+
+                    <!-- INFORMASI BAWAH -->
+                    <aside class="mt-5 rounded-2xl bg-stone-900 px-4 py-4">
+
+                        <p class="text-xs leading-6 text-stone-400">
+                            Sudah bergabung? Kelasmu akan menampilkan
+                            tugas, jadwal, dan pengumuman yang tersedia.
+                        </p>
+
+                    </aside>
+
+                <?php else: ?>
+
+                    <!-- ================================ -->
+                    <!-- BUAT KELAS                       -->
+                    <!-- ================================ -->
+
+                    <section
+                        aria-labelledby="create-title"
+                        class="panel p-5 sm:p-7"
+                    >
+
+                        <div class="mb-6">
+
+                            <h2
+                                id="create-title"
+                                class="text-xl font-semibold tracking-tight"
+                            >
+                                Ruang baru untuk kelasmu
+                            </h2>
+
+                            <div
+                                class="mt-5 flex size-6 items-center justify-center text-lime-400"
+                                aria-hidden="true"
+                            >
+                                <?= icon('users', 'size-5') ?>
+                            </div>
+
+                        </div>
+
+                        <form
+                            action="<?= e(url('gabung', ['mode' => 'create'])) ?>"
+                            method="POST"
+                            class="space-y-6"
+                        >
+
+                            <?= csrf_field() ?>
+
+                            <!-- NAMA KELAS -->
+                            <div>
+
+                                <label
+                                    for="class-name"
+                                    class="mb-2 block text-xs font-semibold"
+                                >
+                                    Nama kelas
+                                </label>
+
+                                <input
+                                    id="class-name"
+                                    name="name"
+                                    type="text"
+                                    required
+                                    minlength="3"
+                                    maxlength="100"
+                                    placeholder="Contoh: SIB · 2B"
+                                    autocomplete="off"
+                                    value="<?= e($className) ?>"
+                                    class="field"
+                                >
+
+                            </div>
+
+                            <!-- PENJELASAN -->
+                            <p class="text-xs leading-6 text-stone-400">
+                                Kamu akan menjadi admin kelas dan
+                                dapat membagikan kode undangan setelah
+                                kelas berhasil dibuat.
+                            </p>
+
+                            <!-- SUBMIT -->
+                            <button
+                                type="submit"
+                                class="button w-full justify-center"
+                            >
+                                Buat kelas
+                            </button>
+
+                        </form>
+
+                    </section>
+
+                <?php endif; ?>
+
+            </main>
+
+            <!-- FOOTER -->
+            <footer class="text-center text-[10px] leading-5 text-stone-500">
+                © <?= date('Y') ?> PUTU. Make room for what matters.
+            </footer>
+
         </div>
-    </body>
+
+    </div>
+
+</body>
 </html>
