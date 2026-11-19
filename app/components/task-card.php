@@ -55,10 +55,7 @@
                 <!-- EDIT -->
                 <a
                     href="<?= e(url('admin/tugas', ['edit' => $task['id']])) ?>"
-                    class="inline-flex min-h-11 w-full items-center justify-center gap-2
-                        rounded-xl border border-stone-700 px-3 py-2
-                        text-xs font-semibold text-stone-300
-                        transition hover:bg-stone-800 lg:w-auto"
+                    class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-stone-700 px-3 py-2 text-xs font-semibold text-stone-300 transition hover:bg-stone-800 lg:w-auto"
                 >
                     <?= icon('edit', 'size-4') ?>
                     Edit
@@ -81,10 +78,7 @@
 
                     <button
                         type="submit"
-                        class="inline-flex min-h-11 w-full items-center justify-center gap-2
-                            rounded-xl border border-red-400/40 px-3 py-2
-                            text-xs font-semibold text-red-400 transition
-                            hover:bg-red-400/10"
+                        class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-400/40 px-3 py-2 text-xs font-semibold text-red-400 transition hover:bg-red-400/10"
                     >
                         <?= icon('trash', 'size-4') ?>
                         Hapus

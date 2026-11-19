@@ -13,7 +13,7 @@ if (is_file(__DIR__ . '/config/database.php')) {
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/kelas.php';
 require_once __DIR__ . '/pengumuman.php';
-// CRUD jadwal admin dimuat hanya oleh halaman admin.
+
 require_once __DIR__ . '/tugas.php';
 require_once __DIR__ . '/jadwal.php';
 require_once __DIR__ . '/anggota.php';

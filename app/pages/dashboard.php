@@ -56,9 +56,7 @@ $profile['name'] = $user['nama'] ?? ($profile['name'] ?? 'Mahasiswa');
         <?php require __DIR__ . '/../components/head.php'; ?>
     </head>
     <body class="bg-stone-950 text-stone-100 font-sans antialiased">
-        <a href="#konten" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 button">
-            Lewati navigasi
-        </a>
+
         <?php require __DIR__ . '/../components/sidebar.php'; ?>
         <div class="lg:ml-68">
             <?php require __DIR__ . '/../components/navbar.php'; ?>

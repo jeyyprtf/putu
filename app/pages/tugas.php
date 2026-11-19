@@ -79,9 +79,6 @@ $courseNames = array_values(array_unique(array_column($tasks, 'course')));
         <?php require __DIR__ . '/../components/head.php'; ?>
     </head>
     <body class="bg-stone-950 text-stone-100 font-sans antialiased">
-        <a href="#konten" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 button">
-            Lewati navigasi
-        </a>
         <?php require __DIR__ . '/../components/sidebar.php'; ?>
         <div class="lg:ml-68">
             <?php require __DIR__ . '/../components/navbar.php'; ?>
@@ -94,10 +91,11 @@ $courseNames = array_values(array_unique(array_column($tasks, 'course')));
                     <?php if (($user['role'] ?? '') === 'admin'): ?>
                         <a
                             href="<?= e(url('admin/tugas')) ?>"
-                            class="button inline-flex items-center gap-2"
+                            class="button page-add"
+                            aria-label="Tambah tugas"
                         >
-                            <?= icon('plus', 'size-4') ?>
-                            Tambah tugas
+                            <?= icon('plus', 'page-add-icon') ?>
+                            <span class="page-add-label">Tambah tugas</span>
                         </a>
                     <?php endif; ?>
 
@@ -142,8 +140,8 @@ $courseNames = array_values(array_unique(array_column($tasks, 'course')));
                 <?php endif; ?>
 
                 <div class="mt-5 mb-3 flex items-center justify-between gap-2">
-                    <p id="task-result" role="status" aria-live="polite" class="shrink-0 text-xs text-stone-400">
-                        <?= $taskCounts['all'] ?> tugas
+                    <p id="task-result" role="status" aria-live="polite" class="shrink-0 text-base md:text-lg text-stone-400 font-semibold">
+                        <span data-task-count class="text-lime-400!"><?= $taskCounts['all'] ?></span> Tugas
                     </p>
                     <div class="flex min-w-0 gap-2">
                         <button id="course-picker" type="button" class="filter-tab min-w-0 max-w-36 px-3!" aria-haspopup="dialog" aria-controls="course-drawer" aria-expanded="false" aria-label="Mata kuliah: Semua. Pilih mata kuliah.">

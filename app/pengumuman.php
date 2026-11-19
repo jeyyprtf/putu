@@ -80,3 +80,27 @@ function pengumuman_ringkas(string $teks, int $maks = 160): string
 
     return rtrim($cocok[0] ?? '') . '…';
 }
+
+/** Ambil satu pengumuman milik kelas admin untuk mengisi form edit. */
+function pengumuman_ambil(int $idPengumuman, int $kelasId): ?array
+{
+    $baris = db_all(
+        'SELECT judul, isi_pengumuman, is_penting
+         FROM pengumuman WHERE id_pengumuman = :id AND id_kelas = :kelas',
+        ['id' => $idPengumuman, 'kelas' => $kelasId]
+    );
+    return $baris[0] ?? null;
+}
+
+/** Perbarui isi pengumuman dengan tetap mempertahankan penulis dan tanggal terbit. */
+function pengumuman_ubah(int $idPengumuman, int $kelasId, string $judul, string $isi, bool $penting): bool
+{
+    return db_exec(
+        'UPDATE pengumuman SET judul = :judul, isi_pengumuman = :isi, is_penting = :penting
+         WHERE id_pengumuman = :id AND id_kelas = :kelas',
+        [
+            'id' => $idPengumuman, 'kelas' => $kelasId, 'judul' => $judul,
+            'isi' => $isi, 'penting' => $penting ? 'true' : 'false',
+        ]
+    ) === 1;
+}

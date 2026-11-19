@@ -78,7 +78,8 @@
                 coursePicker.title = label;
             }
 
-            if (one('#task-result')) one('#task-result').textContent = `${visible} tugas`;
+            const count = one('#task-result [data-task-count]');
+            if (count) count.textContent = String(visible);
             if (one('#tasks-empty')) one('#tasks-empty').hidden = visible !== 0;
         };
 
@@ -195,7 +196,7 @@
         let view = 'daily';
         let selectedDay = schedule.dataset.today;
         const updateSchedule = () => {
-            schedule.classList.toggle('xl:grid-cols-2', view === 'weekly');
+            schedule.classList.toggle('xl:grid-cols-1', view === 'weekly');
             for (const section of all('[data-schedule-day]')) section.hidden = view === 'daily' && section.dataset.scheduleDay !== selectedDay;
             for (const button of all('[data-schedule-view]')) button.setAttribute('aria-pressed', String(button.dataset.scheduleView === view));
             for (const button of all('[data-day]')) button.setAttribute('aria-pressed', String(button.dataset.day === selectedDay));
@@ -239,3 +240,199 @@ if (toast) {
         }, 250);
     }, duration);
 }
+
+(() => {
+const select = document.getElementById('jenis');
+
+const buttons = [
+    ...document.querySelectorAll('[data-jenis]')
+];
+
+if (!select) return;
+
+const update = () => {
+    buttons.forEach((button) => {
+        const active =
+            button.dataset.jenis === select.value;
+
+
+            button.setAttribute(
+            'aria-pressed',
+            String(active)
+        );
+        button.classList.toggle(
+            'border-lime-300',
+            active
+        );
+        button.classList.toggle(
+            'bg-lime-300/10',
+            active
+        );
+        button.classList.toggle(
+            'text-lime-200',
+            active
+        );
+        button.classList.toggle(
+            'border-stone-700',
+            !active
+        );
+
+        button.classList.toggle(
+            'text-stone-400',
+            !active
+        );
+    });
+};
+
+
+buttons.forEach((button) => {
+    button.addEventListener('click', () => {
+        select.value = button.dataset.jenis;
+        update();
+    });
+});
+
+select.addEventListener('change', update);
+
+update();
+})();
+
+// ------------------------------------------------ Logout confirmation
+
+(() => {
+    const dialog = document.getElementById('logout-confirm');
+    const cancel = document.querySelector('[data-logout-cancel]');
+    const accept = document.querySelector('[data-logout-accept]');
+
+    if (!dialog || !cancel || !accept) return;
+
+    let pendingForm = null;
+
+    document.addEventListener('submit', (event) => {
+        const form = event.target;
+
+        if (
+            !(form instanceof HTMLFormElement) ||
+            !form.matches('[data-logout-confirm]')
+        ) {
+            return;
+        }
+
+        event.preventDefault();
+
+        if (dialog.open) return;
+
+        pendingForm = form;
+        dialog.showModal();
+    });
+
+    cancel.addEventListener('click', () => {
+        dialog.close();
+    });
+
+    accept.addEventListener('click', () => {
+        if (!pendingForm) return;
+
+        const form = pendingForm;
+        pendingForm = null;
+
+        accept.disabled = true;
+
+        // Mengirim form POST asli beserta token CSRF.
+        // Tidak memicu event submit kedua kali.
+        HTMLFormElement.prototype.submit.call(form);
+    });
+
+    dialog.addEventListener('close', () => {
+        pendingForm = null;
+        accept.disabled = false;
+    });
+
+    dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) {
+            dialog.close();
+        }
+    });
+})();
+
+(() => {
+    const dialog = document.getElementById('anggota-dialog');
+    const daftar = document.getElementById('member-list');
+    if (!dialog || !daftar) return;
+    const target = document.getElementById('anggota-target');
+    const nama = document.getElementById('anggota-dialog-nama');
+    const role = document.getElementById('anggota-role');
+    const edit = document.getElementById('anggota-edit');
+    const konfirmasi = document.getElementById('anggota-konfirmasi');
+    const namaKonfirmasi = document.getElementById('anggota-konfirmasi-nama');
+    const mintaKeluar = document.getElementById('anggota-minta-keluar');
+    const batal = document.getElementById('anggota-batal');
+
+    daftar.addEventListener('click', (event) => {
+        const tombol = event.target.closest('[data-kelola-anggota]');
+        if (!tombol) return;
+
+        target.value = tombol.dataset.id;
+        nama.textContent = tombol.dataset.nama;
+        namaKonfirmasi.textContent = tombol.dataset.nama;
+        role.value = tombol.dataset.role;
+
+        edit.hidden = false;
+        konfirmasi.hidden = true;
+        dialog.showModal();
+        role.focus();
+    });
+
+    mintaKeluar.addEventListener('click', () => {
+        edit.hidden = true;
+        konfirmasi.hidden = false;
+        batal.focus();
+    });
+
+    batal.addEventListener('click', () => dialog.close());
+})();
+
+(() => {
+                const search = document.getElementById('member-search');
+                const result = document.getElementById('member-result');
+                const tabs = [...document.querySelectorAll('[data-member-filter]')];
+                const cards = [...document.querySelectorAll('[data-member]')];
+                const empty = document.getElementById('members-empty');
+                const reset = document.querySelector('[data-member-reset]');
+                if (!search || !cards.length) return;
+
+                let jabatan = 'Semua';
+
+                const apply = () => {
+                    const q = search.value.trim().toLowerCase();
+                    let shown = 0;
+
+                    cards.forEach((card) => {
+                        const cocokJabatan = jabatan === 'Semua' || card.dataset.memberRole === jabatan;
+                        const cocokKata = q === '' || card.dataset.memberSearch.includes(q);
+                        const tampil = cocokJabatan && cocokKata;
+                        card.classList.toggle('hidden', !tampil);
+                        if (tampil) shown++;
+                    });
+
+                    empty.classList.toggle('hidden', shown !== 0);
+                    result.textContent = shown + ' anggota';
+                };
+
+                search.addEventListener('input', apply);
+
+                tabs.forEach((tab) => {
+                    tab.addEventListener('click', () => {
+                        jabatan = tab.dataset.memberFilter;
+                        tabs.forEach((t) => t.setAttribute('aria-pressed', String(t === tab)));
+                        apply();
+                    });
+                });
+
+                reset.addEventListener('click', () => {
+                    search.value = '';
+                    jabatan = 'Semua';
+                    tabs.forEach((t) => t.setAttribute('aria-pressed', String(t.dataset.memberFilter === 'Semua')));
+                    apply();
+                });
+            })();

@@ -170,13 +170,6 @@ if ($ok) {
 
 <body class="bg-stone-950 text-stone-100 font-sans antialiased">
 
-    <a
-        href="#konten"
-        class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 button"
-    >
-        Lewati navigasi
-    </a>
-
     <!-- SIDEBAR -->
     <?php require __DIR__ . '/../../components/sidebar.php'; ?>
 

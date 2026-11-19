@@ -1,55 +1,100 @@
 <?php
-/**
- * Halaman anggota kelas.
- *
- *   1. guard     : wajib login + punya kelas
- *   2. muat data : modul app/anggota.php
- *   3. render    : daftar kartu + panel "Tentang kelas"
- *
- * Pencarian & filter jabatan dikerjakan di sisi klien.
- */
 $page = 'anggota';
 $title = 'Anggota Kelas';
+
 require_once __DIR__ . '/../bootstrap.php';
+require_once __DIR__ . '/../anggota.php';
 
 $user = require_login();
 $idUser = (int) $user['id_user'];
-$kelasId = (int) $user['id_kelas'];
 
 $anggota = [];
 $kelas = null;
+$kelasId = 0;
 $semester = '';
+$isAdminKelas = false;
 $galatMuat = '';
+$galatAksi = '';
+
+$pesanOk = $_SESSION['anggota_pesan'] ?? '';
+unset($_SESSION['anggota_pesan']);
+
+$tokenAnggota = $_SESSION['anggota_token'] ??= bin2hex(random_bytes(32));
 
 try {
-    $kelas = anggota_kelas($kelasId);
-    $semester = anggota_semester($kelasId);
-    $anggota = anggota_daftar($kelasId, $idUser);
-} catch (Throwable $e) {
-    error_log('[anggota] ' . get_class($e) . ': ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
-    $galatMuat = 'DEBUG: ' . $e->getMessage();
-}
+    // Baca kelas dan jabatan terbaru, termasuk jika sesi login masih aktif
+    // setelah pengguna diturunkan jabatannya atau dikeluarkan dari kelas.
+    $stmt = db()->prepare(
+        'SELECT id_kelas, role FROM users WHERE id_user = :id'
+    );
+    $stmt->execute(['id' => $idUser]);
+    $akun = $stmt->fetch(PDO::FETCH_ASSOC);
 
+    $kelasId = (int) ($akun['id_kelas'] ?? 0);
+    $isAdminKelas = $kelasId > 0 && ($akun['role'] ?? '') === 'admin';
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        try {
+            $tokenPost = $_POST['token_anggota'] ?? null;
+
+            if (!is_string($tokenPost) || !hash_equals($tokenAnggota, $tokenPost)) {
+                throw new DomainException('Formulir sudah kedaluwarsa. Muat ulang halaman.');
+            }
+
+            $kelasForm = filter_input(INPUT_POST, 'id_kelas', FILTER_VALIDATE_INT);
+            $idTarget = filter_input(INPUT_POST, 'id_target', FILTER_VALIDATE_INT);
+            $aksi = $_POST['aksi'] ?? '';
+            $roleBaru = $_POST['role'] ?? '';
+
+            if (!$kelasForm || $kelasForm !== $kelasId) {
+                throw new DomainException('Kelas sudah berubah. Muat ulang halaman.');
+            }
+
+            anggota_kelola(
+                $idUser,
+                $kelasId,
+                (int) $idTarget,
+                is_string($aksi) ? $aksi : '',
+                is_string($roleBaru) ? $roleBaru : ''
+            );
+
+            $_SESSION['anggota_pesan'] = $aksi === 'keluarkan'
+                ? 'Anggota berhasil dikeluarkan dari kelas.'
+                : 'Jabatan anggota berhasil diperbarui.';
+
+            // Pertahankan URL halaman, termasuk parameter router jika ada.
+            $urlHalaman = '/' . ltrim($_SERVER['REQUEST_URI'], '/');
+            header('Location: ' . $urlHalaman, true, 303);
+            exit;
+        } catch (DomainException $e) {
+            $galatAksi = $e->getMessage();
+        } catch (Throwable $e) {
+            error_log('[anggota/kelola] ' . $e->getMessage());
+            $galatAksi = 'Perubahan gagal disimpan. Silakan coba lagi.';
+        }
+    }
+
+    if ($kelasId > 0) {
+        $kelas = anggota_kelas($kelasId);
+        $semester = anggota_semester($kelasId);
+        $anggota = anggota_daftar($kelasId, $idUser);
+    }
+} catch (Throwable $e) {
+    error_log('[anggota/muat] ' . $e->getMessage());
+    $galatMuat = 'Data anggota gagal dimuat. Silakan muat ulang halaman.';
+}
 
 $totalAnggota = count($anggota);
-$totalAdmin = 0;
-foreach ($anggota as $m) {
-    if (($m['role'] ?? '') === 'admin') {
-        $totalAdmin++;
-    }
-}
-
+$totalAdmin = count(array_keys(array_column($anggota, 'role'), 'admin', true));
 $labelKelas = trim((string) ($kelas['nama_kelas'] ?? ''));
 ?>
+
 <!DOCTYPE html>
 <html lang="id">
     <head>
         <?php require __DIR__ . '/../components/head.php'; ?>
     </head>
     <body class="bg-stone-950 text-stone-100 font-sans antialiased">
-        <a href="#konten" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 button">
-            Lewati navigasi
-        </a>
         <?php require __DIR__ . '/../components/sidebar.php'; ?>
         <div class="lg:ml-68">
             <?php require __DIR__ . '/../components/navbar.php'; ?>
@@ -63,6 +108,17 @@ $labelKelas = trim((string) ($kelas['nama_kelas'] ?? ''));
                     </p>
                 </section>
 
+                <?php if ($pesanOk !== ''): ?>
+                    <p role="status" class="mb-4 rounded-2xl bg-lime-300/10 px-4 py-3 text-sm text-lime-200">
+                        <?= e($pesanOk) ?>
+                    </p>
+                <?php endif; ?>
+
+                <?php if ($galatAksi !== ''): ?>
+                    <p role="alert" class="mb-4 rounded-2xl bg-red-300/10 px-4 py-3 text-sm text-red-300">
+                        <?= e($galatAksi) ?>
+                    </p>
+                <?php endif; ?>
                 <?php if ($galatMuat !== ''): ?>
                     <p role="alert" class="mb-4 rounded-2xl border border-red-300/30 bg-red-300/10 px-4 py-3 text-sm text-red-300"><?= e($galatMuat) ?></p>
                 <?php endif; ?>
@@ -128,59 +184,11 @@ $labelKelas = trim((string) ($kelas['nama_kelas'] ?? ''));
                     </aside>
                 </div>
 
-                <noscript>
-                    <p class="mt-5 text-sm text-amber-200">
-                        Aktifkan JavaScript untuk mencari dan memfilter anggota.
-                    </p>
-                </noscript>
+                <?php if ($isAdminKelas && $galatMuat === ''): ?>
+                    <?php require __DIR__ . '/../components/member-manage.php'; ?>
+                <?php endif; ?>
             </main>
         </div>
         <?php require __DIR__ . '/../components/dock.php'; ?>
-        <script>
-            (() => {
-                const search = document.getElementById('member-search');
-                const result = document.getElementById('member-result');
-                const tabs = [...document.querySelectorAll('[data-member-filter]')];
-                const cards = [...document.querySelectorAll('[data-member]')];
-                const empty = document.getElementById('members-empty');
-                const reset = document.querySelector('[data-member-reset]');
-                if (!search || !cards.length) return;
-
-                let jabatan = 'Semua';
-
-                const apply = () => {
-                    const q = search.value.trim().toLowerCase();
-                    let shown = 0;
-
-                    cards.forEach((card) => {
-                        const cocokJabatan = jabatan === 'Semua' || card.dataset.memberRole === jabatan;
-                        const cocokKata = q === '' || card.dataset.memberSearch.includes(q);
-                        const tampil = cocokJabatan && cocokKata;
-                        card.classList.toggle('hidden', !tampil);
-                        if (tampil) shown++;
-                    });
-
-                    empty.classList.toggle('hidden', shown !== 0);
-                    result.textContent = shown + ' anggota';
-                };
-
-                search.addEventListener('input', apply);
-
-                tabs.forEach((tab) => {
-                    tab.addEventListener('click', () => {
-                        jabatan = tab.dataset.memberFilter;
-                        tabs.forEach((t) => t.setAttribute('aria-pressed', String(t === tab)));
-                        apply();
-                    });
-                });
-
-                reset.addEventListener('click', () => {
-                    search.value = '';
-                    jabatan = 'Semua';
-                    tabs.forEach((t) => t.setAttribute('aria-pressed', String(t.dataset.memberFilter === 'Semua')));
-                    apply();
-                });
-            })();
-        </script>
     </body>
 </html>

@@ -60,7 +60,6 @@ try {
         <?php require __DIR__ . '/../components/head.php'; ?>
     </head>
     <body class="bg-stone-950 text-stone-100 font-sans antialiased">
-        <a href="#konten" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 button">Lewati navigasi</a>
         <?php require __DIR__ . '/../components/sidebar.php'; ?>
         <div class="lg:ml-68">
             <?php require __DIR__ . '/../components/navbar.php'; ?>
@@ -110,9 +109,12 @@ try {
                             <?php endif; ?>
                         </dl>
                         <a href="<?= e(url('jadwal')) ?>" class="mt-5 flex min-h-11 items-center justify-between gap-2 border-t border-stone-800 pt-4 text-xs font-semibold text-lime-300">Lihat jadwal kelas <?= icon('arrow', 'size-4') ?></a>
-                        <form action="<?= e(url('logout')) ?>" method="POST" class="mt-2 lg:hidden">
+                        <form action="<?= e(url('logout')) ?>" method="POST" class="mt-2 lg:hidden" data-logout-confirm>
                             <?= csrf_field() ?>
-                            <button type="submit" class="button button-secondary w-full"><?= icon('logout', 'size-4') ?>Keluar</button>
+
+                            <button type="submit" class="button button-secondary w-full text-red-500!">
+                                <?= icon('logout', 'size-4') ?>Keluar
+                            </button>
                         </form>
                     </section>
                 </div>

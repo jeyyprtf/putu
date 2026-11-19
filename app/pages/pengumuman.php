@@ -1,247 +1,181 @@
 <?php
-/**
- * Halaman pengumuman kelas.
- *
- * Urutan baca file ini:
- *   1. guard        : wajib login + wajib punya kelas
- *   2. identitas    : role dan id_kelas diambil dari SESI, bukan dari URL/form
- *   3. aksi POST    : admin menerbitkan / menghapus pengumuman
- *   4. muat data    : daftar pengumuman kelas
- *   5. render HTML
- *
- * Semua SQL ada di app/pengumuman.php. File ini hanya mengatur input,
- * menampilkan pesan, dan menyusun HTML.
- */
+/** Daftar pengumuman kelas dan aksi hapus untuk admin. */
 $page = 'pengumuman';
 $title = 'Pengumuman';
 require_once __DIR__ . '/../bootstrap.php';
 
 $user = require_login();
-$isAdmin = $user['role'] === 'admin';
-$kelasId = (int) $user['id_kelas'];
-
-// ---------------------------------------------------------------- Pesan status
+$isAdmin = ($user['role'] ?? '') === 'admin';
+$kelasId = (int) ($user['id_kelas'] ?? 0);
+if ($kelasId < 1) {
+    http_response_code(403);
+    exit('Kamu belum tergabung dalam kelas.');
+}
 
 $pesanOk = [
-    'dibuat'  => 'Pengumuman diterbitkan.',
+    'dibuat' => 'Pengumuman diterbitkan.',
+    'diubah' => 'Pengumuman diperbarui.',
     'dihapus' => 'Pengumuman dihapus.',
 ];
 $okKey = $_GET['ok'] ?? '';
 $ok = is_string($okKey) ? ($pesanOk[$okKey] ?? '') : '';
-
 $error = '';
-$form = ['judul' => '', 'isi' => '', 'penting' => false];
 
-// ---------------------------------------------------------------- Aksi admin (POST)
-
+// Aksi hapus dari kartu pengumuman.
 if (is_post()) {
     if (!$isAdmin) {
         http_response_code(403);
         exit('Akses ditolak.');
     }
-
-    $aksi = post_str('aksi');
-
     try {
         if (!csrf_verify()) {
             $error = 'Sesi form kedaluwarsa. Muat ulang halaman lalu coba lagi.';
-
-        } elseif ($aksi === 'terbit') {
-            // Rapikan spasi berlebih, lalu simpan nilai form supaya tidak hilang
-            // saat validasi gagal.
-            $form['judul'] = preg_replace('/\s+/u', ' ', post_str('judul')) ?? '';
-            $isiMentah = is_string($_POST['isi'] ?? null) ? $_POST['isi'] : '';
-            $form['isi'] = trim(str_replace("\r\n", "\n", $isiMentah));
-            $form['penting'] = ($_POST['is_penting'] ?? '') === '1';
-
-            $panjangJudul = text_length($form['judul']);
-            $panjangIsi = text_length($form['isi'], allowNewline: true);
-
-            if ($panjangJudul === null || $panjangJudul < 3 || $panjangJudul > 200) {
-                $error = 'Judul harus 3–200 karakter.';
-            } elseif ($panjangIsi === null || $panjangIsi < 1 || $panjangIsi > 5000) {
-                $error = 'Isi pengumuman harus 1–5000 karakter (tanpa karakter kontrol).';
-            } else {
-                pengumuman_buat($kelasId, (int) $user['id_user'], $form['judul'], $form['isi'], $form['penting']);
-                redirect(url('pengumuman', ['ok' => 'dibuat']));
-            }
-
-        } elseif ($aksi === 'hapus') {
-            $idHapus = post_str('id_pengumuman');
-            $idValid = ctype_digit($idHapus) && strlen($idHapus) <= 18 ? (int) $idHapus : 0;
-
-            if (pengumuman_hapus($idValid, $kelasId)) {
+        } elseif (post_str('aksi') !== 'hapus') {
+            $error = 'Aksi tidak dikenal.';
+        } else {
+            $id = filter_var(post_str('id_pengumuman'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+            if ($id !== false && pengumuman_hapus($id, $kelasId)) {
                 redirect(url('pengumuman', ['ok' => 'dihapus']));
+                exit;
             }
             $error = 'Pengumuman tidak ditemukan di kelasmu.';
-
-        } else {
-            $error = 'Aksi tidak dikenal.';
         }
     } catch (Throwable $e) {
-        error_log('[pengumuman] ' . $e->getMessage());
-        $error = 'Terjadi kesalahan di server. Coba lagi nanti.';
+        error_log('[pengumuman] hapus: ' . $e->getMessage());
+        $error = 'Pengumuman gagal dihapus. Coba lagi nanti.';
     }
 }
 
-// ---------------------------------------------------------------- Muat data
-
+// Muat daftar untuk kelas pengguna.
 $pengumuman = [];
 $galatMuat = '';
-
 try {
     $pengumuman = pengumuman_daftar($kelasId);
 } catch (Throwable $e) {
-    error_log('[pengumuman] muat data: ' . $e->getMessage());
+    error_log('[pengumuman] muat daftar: ' . $e->getMessage());
     $galatMuat = 'Pengumuman belum bisa dimuat. Coba muat ulang halaman.';
 }
-
 $bukaId = is_string($_GET['id'] ?? null) ? $_GET['id'] : '';
 ?>
 <!DOCTYPE html>
 <html lang="id">
-    <head>
-        <?php require __DIR__ . '/../components/head.php'; ?>
-    </head>
-    <body class="bg-stone-950 text-stone-100 font-sans antialiased">
-        <a href="#konten" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 button">
-            Lewati navigasi
-        </a>
-        <?php require __DIR__ . '/../components/sidebar.php'; ?>
-        <div class="lg:ml-68">
-            <?php require __DIR__ . '/../components/navbar.php'; ?>
-            <main id="konten" class="workspace-content mx-auto max-w-7xl px-5 py-8 pt-4 sm:px-8 sm:pt-8 lg:px-10 lg:py-10 lg:pt-10">
-                <section class="mb-4">
-                    <h1 class="mt-1 text-3xl font-semibold tracking-tight sm:mt-0 sm:text-4xl">
-                        Kabar kelas<span class="text-lime-300">.</span>
-                    </h1>
-                </section>
-
-                <?php if ($ok !== ''): ?>
-                    <p role="status" class="mb-4 max-w-4xl rounded-2xl border border-lime-300/30 bg-lime-300/10 px-4 py-3 text-sm text-lime-200"><?= e($ok) ?></p>
-                <?php endif; ?>
-                <?php if ($galatMuat !== ''): ?>
-                    <p role="alert" class="mb-4 max-w-4xl rounded-2xl border border-red-300/30 bg-red-300/10 px-4 py-3 text-sm text-red-300"><?= e($galatMuat) ?></p>
-                <?php endif; ?>
-
+<head>
+    <?php require __DIR__ . '/../components/head.php'; ?>
+</head>
+<body class="bg-stone-950 text-stone-100 font-sans antialiased">
+    <?php require __DIR__ . '/../components/sidebar.php'; ?>
+    <div class="lg:ml-68">
+        <?php require __DIR__ . '/../components/navbar.php'; ?>
+        <main id="konten" class="workspace-content mx-auto max-w-7xl px-5 py-8 pt-4 sm:px-8 sm:pt-8 lg:px-10 lg:py-10">
+            <header class="mb-6 flex flex-wrap items-center justify-between gap-3">
+                <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">Kabar kelas<span class="text-lime-300">.</span></h1>
                 <?php if ($isAdmin): ?>
-                    <section aria-labelledby="tulis-title" class="panel mb-4 max-w-4xl p-4 sm:p-6">
-                        <details <?= $error !== '' ? 'open' : '' ?>>
-                            <summary id="tulis-title" class="flex min-h-11 items-center gap-2 text-sm font-semibold text-lime-300">
-                                <?= icon('bell', 'size-4') ?>Tulis pengumuman untuk kelas
-                            </summary>
-                            <form action="<?= e(url('pengumuman')) ?>" method="POST" class="mt-4 space-y-4">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="aksi" value="terbit">
-                                <div>
-                                    <label for="p-judul" class="mb-2 block text-xs font-semibold">Judul</label>
-                                    <input id="p-judul" name="judul" type="text" required minlength="3" maxlength="200" value="<?= e($form['judul']) ?>" placeholder="Contoh: Perubahan ruang kelas Basis Data" class="field">
-                                </div>
-                                <div>
-                                    <label for="p-isi" class="mb-2 block text-xs font-semibold">Isi pengumuman</label>
-                                    <textarea id="p-isi" name="isi" rows="6" required maxlength="5000" class="field"><?= e($form['isi']) ?></textarea>
-                                </div>
-                                <label class="flex min-h-11 items-center gap-3 text-sm text-stone-300">
-                                    <input type="checkbox" name="is_penting" value="1" <?= $form['penting'] ? 'checked' : '' ?> class="size-4 accent-lime-500">
-                                    Tandai sebagai penting
-                                </label>
-                                <p role="alert" aria-live="polite" class="text-xs leading-6 text-red-300" <?= $error === '' ? 'hidden' : '' ?>><?= e($error) ?></p>
-                                <button type="submit" class="button"><?= icon('check', 'size-4') ?>Terbitkan</button>
-                            </form>
-                        </details>
-                    </section>
-                <?php elseif ($error !== ''): ?>
-                    <p role="alert" class="mb-4 max-w-4xl text-xs leading-6 text-red-300"><?= e($error) ?></p>
+                    <a
+                        href="<?= e(url('admin/pengumuman')) ?>"
+                        class="button page-add"
+                        aria-label="Tambah pengumuman"
+                    >
+                        <?= icon('plus', 'page-add-icon') ?>
+                        <span class="page-add-label">Tambah pengumuman</span>
+                    </a>
+                <?php endif; ?>
+            </header>
+
+            <?php if ($ok !== ''): ?>
+                <p role="status" class="mb-4 rounded-2xl border border-lime-300/30 bg-lime-300/10 px-4 py-3 text-sm text-lime-200"><?= e($ok) ?></p>
+            <?php endif; ?>
+            <?php foreach ([$error, $galatMuat] as $pesan): ?>
+                <?php if ($pesan !== ''): ?>
+                    <p role="alert" class="mb-4 rounded-2xl border border-red-300/30 bg-red-300/10 px-4 py-3 text-sm text-red-300"><?= e($pesan) ?></p>
+                <?php endif; ?>
+            <?php endforeach; ?>
+
+            <div class="mb-3 flex items-center justify-between gap-3">
+                <p id="news-result" role="status" aria-live="polite" class="text-base md:text-lg font-semibold text-stone-400"><span class="text-lime-400"><?= count($pengumuman) ?></span> pengumuman</p>
+                <div class="flex gap-2" role="group" aria-label="Kategori pengumuman">
+                    <button type="button" data-news-filter="Semua" aria-pressed="true" class="filter-tab">Semua</button>
+                    <button type="button" data-news-filter="Penting" aria-pressed="false" class="filter-tab">Penting</button>
+                </div>
+            </div>
+            <div class="space-y-3 sm:space-y-4">
+                <?php if ($pengumuman === [] && $galatMuat === ''): ?>
+                    <div class="panel px-6 py-14 text-center">
+                        <span class="mx-auto flex size-12 items-center justify-center rounded-2xl bg-lime-300/10 text-lime-300"><?= icon('bell') ?></span>
+                        <h2 class="mt-4 text-lg font-semibold">Belum ada pengumuman.</h2>
+                        <p class="mt-2 text-sm text-stone-400"><?= $isAdmin ? 'Pilih Tambah pengumuman untuk menulis kabar pertama kelasmu.' : 'Kabar dari admin kelas akan muncul di sini.' ?></p>
+                    </div>
                 <?php endif; ?>
 
-                <div class="mb-3 flex max-w-4xl items-center justify-between gap-3">
-                    <p id="news-result" role="status" aria-live="polite" class="min-w-0 text-xs text-stone-400">
-                        <?= count($pengumuman) ?> pengumuman
-                    </p>
-                    <div class="flex shrink-0 gap-2" role="group" aria-label="Kategori pengumuman">
-                        <button type="button" data-news-filter="Semua" aria-pressed="true" class="filter-tab">
-                            Semua
-                        </button>
-                        <button type="button" data-news-filter="Penting" aria-pressed="false" class="filter-tab">
-                            Penting
-                        </button>
-                    </div>
-                </div>
-                <div class="max-w-4xl space-y-3 sm:space-y-4">
-                    <?php if ($pengumuman === [] && $galatMuat === ''): ?>
-                        <div class="panel px-6 py-14 text-center">
-                            <span class="mx-auto flex size-12 items-center justify-center rounded-2xl bg-lime-300/10 text-lime-300"><?= icon('bell') ?></span>
-                            <h2 class="mt-4 text-lg font-semibold">Belum ada pengumuman.</h2>
-                            <p class="mt-2 text-sm text-stone-400">
-                                <?= $isAdmin ? 'Tulis pengumuman pertama untuk kelasmu lewat form di atas.' : 'Kabar dari admin kelas akan muncul di sini.' ?>
-                            </p>
-                        </div>
-                    <?php endif; ?>
-
-                    <?php foreach ($pengumuman as $n): ?>
-                        <?php
-                        $idN = (int) $n['id_pengumuman'];
-                        $penting = (bool) $n['is_penting'];
-                        $ringkas = pengumuman_ringkas($n['isi_pengumuman']);
-                        $terpotong = $ringkas !== preg_replace('/\s+/u', ' ', trim($n['isi_pengumuman']));
-                        ?>
-                        <article class="panel p-4 sm:p-7" data-news-card data-important="<?= $penting ? 'true' : 'false' ?>" id="news-<?= e($idN) ?>">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <?php if ($penting): ?>
-                                    <span class="tag bg-amber-300/10 text-amber-200"><?= icon('bell', 'size-3') ?>Penting</span>
-                                <?php endif; ?>
-                                <span class="ml-auto text-xs text-stone-400"><?= e(date_id($n['tanggal'])) ?></span>
-                            </div>
-                            <h2 class="mt-2 text-xl font-semibold leading-7 tracking-tight sm:mt-5 sm:leading-8">
-                                <?= e($n['judul']) ?>
-                            </h2>
-                            <p class="mt-1 text-xs text-stone-400 sm:mt-2">
-                                Oleh <?= e($n['penulis']) ?>
-                            </p>
-                            <p class="mt-2 text-sm leading-6 text-stone-400 sm:mt-4 sm:leading-7">
-                                <?= e($ringkas) ?>
-                            </p>
-                            <?php if ($terpotong || str_contains($n['isi_pengumuman'], "\n")): ?>
-                                <details class="mt-1 sm:mt-4" <?= $bukaId === (string) $idN ? 'open' : '' ?>>
-                                    <summary class="ml-auto flex min-h-11 w-fit items-center gap-2 text-xs font-semibold text-lime-300">
-                                        Baca selengkapnya<span class="details-arrow transition-transform"><?= icon('chevron', 'size-3') ?></span>
-                                    </summary>
-                                    <div class="mt-2 whitespace-pre-line border-t border-stone-800 pt-3 text-sm leading-6 text-stone-300 sm:mt-3 sm:pt-4 sm:leading-8">
-                                        <?= e($n['isi_pengumuman']) ?>
-                                    </div>
-                                </details>
+                <?php foreach ($pengumuman as $item): ?>
+                    <?php
+                    $id = (int) $item['id_pengumuman'];
+                    $isi = $item['isi_pengumuman'];
+                    $penting = in_array($item['is_penting'], [true, 1, '1', 't', 'true'], true);
+                    $ringkas = pengumuman_ringkas($isi);
+                    $adaDetail = str_contains($isi, "\n") || $ringkas !== preg_replace('/\s+/u', ' ', trim($isi));
+                    ?>
+                    <article id="news-<?= e($id) ?>" data-news-card data-important="<?= $penting ? 'true' : 'false' ?>" class="panel p-4 sm:p-7">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <p class="text-xs md:text-sm text-stone-400">Oleh <?= e($item['penulis']) ?></p>
+                            <?php if ($penting): ?>
+                                <span class="tag bg-amber-300/10 text-amber-200"><?= icon('bell', 'size-3') ?> Penting</span>
                             <?php endif; ?>
+                        </div>
+                        <h2 class="mt-3 text-xl font-semibold tracking-tight"><?= e($item['judul']) ?></h2>
+                        <p class="mt-2 text-sm leading-6 text-stone-400"><?= e($ringkas) ?></p>
+                        <?php if ($adaDetail): ?>
+                            <details class="mt-2" <?= $bukaId === (string) $id ? 'open' : '' ?>>
+                                <summary class="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-xs md:text-sm font-semibold text-lime-300">
+                                    Baca selengkapnya <?= icon('chevron', 'size-3') ?>
+                                </summary>
+                                <div class="whitespace-pre-line text-sm leading-7 text-stone-300"><?= e($isi) ?></div>
+                            </details>
+                        <?php endif; ?>
+                        <footer class="mt-4 flex flex-col gap-3 border-t border-stone-800 pt-3 lg:flex-row lg:items-center lg:justify-between">
+                            <span class="text-xs text-stone-400 md:text-sm">
+                                <?= e(date_id($item['tanggal'])) ?>
+                            </span>
+
                             <?php if ($isAdmin): ?>
-                                <details class="mt-3 border-t border-stone-800 pt-3">
-                                    <summary class="flex min-h-11 w-fit items-center text-xs font-semibold text-stone-400 hover:text-red-300">Hapus pengumuman</summary>
-                                    <form action="<?= e(url('pengumuman')) ?>" method="POST" class="mt-2 rounded-2xl border border-red-300/30 bg-red-300/10 p-4">
+                                <div class="grid w-full grid-cols-2 gap-2 lg:flex lg:w-auto lg:shrink-0 lg:items-center">
+                                    <a
+                                        href="<?= e(url('admin/pengumuman', ['id' => $id])) ?>"
+                                        class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-stone-700 px-3 py-2 text-xs font-semibold text-stone-300 transition hover:bg-stone-800 lg:w-auto"
+                                    >
+                                        <?= icon('edit', 'size-4') ?>
+                                        Edit
+                                    </a>
+
+                                    <form
+                                        action="<?= e(url('pengumuman')) ?>"
+                                        method="POST"
+                                        class="min-w-0"
+                                        onsubmit="return confirm('Hapus pengumuman ini secara permanen untuk seluruh kelas?');"
+                                    >
                                         <?= csrf_field() ?>
                                         <input type="hidden" name="aksi" value="hapus">
-                                        <input type="hidden" name="id_pengumuman" value="<?= e($idN) ?>">
-                                        <p class="text-xs leading-6 text-red-200">Hapus pengumuman ini untuk seluruh kelas? Tindakan ini tidak bisa dibatalkan.</p>
-                                        <button type="submit" class="mt-3 inline-flex min-h-11 items-center justify-center rounded-2xl bg-red-400 px-5 text-sm font-bold text-red-950 transition-colors hover:bg-red-300">
-                                            Ya, hapus
+                                        <input type="hidden" name="id_pengumuman" value="<?= e($id) ?>">
+
+                                        <button
+                                            type="submit"
+                                            class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-400/40 px-3 py-2 text-xs font-semibold text-red-400 transition hover:bg-red-400/10 lg:w-auto"
+                                        >
+                                            <?= icon('trash', 'size-4') ?>
+                                            Hapus
                                         </button>
                                     </form>
-                                </details>
+                                </div>
                             <?php endif; ?>
-                        </article>
-                    <?php endforeach; ?>
-                    <div id="news-empty" hidden class="panel px-6 py-14 text-center">
-                        <span class="mx-auto flex size-12 items-center justify-center rounded-2xl bg-lime-300/10 text-lime-300"><?= icon('bell') ?></span>
-                        <h2 class="mt-4 text-lg font-semibold">
-                            Belum ada pengumuman untuk filter ini.
-                        </h2>
-                        <p class="mt-2 text-sm text-stone-400">
-                            Coba lihat semua pengumuman kelas.
-                        </p>
-                        <button type="button" data-news-reset class="button button-secondary mt-5">
-                            Lihat semua
-                        </button>
-                    </div>
+                        </footer>
+                    </article>
+                <?php endforeach; ?>
+                <div id="news-empty" hidden class="panel px-6 py-14 text-center">
+                    <h2 class="text-lg font-semibold">Belum ada pengumuman untuk filter ini.</h2>
+                    <button type="button" data-news-reset class="button button-secondary mt-5">Lihat semua</button>
                 </div>
-            </main>
-        </div>
-        <?php require __DIR__ . '/../components/dock.php'; ?>
-    </body>
+            </div>
+        </main>
+    </div>
+    <?php require __DIR__ . '/../components/dock.php'; ?>
+</body>
 </html>

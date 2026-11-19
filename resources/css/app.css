@@ -18,12 +18,13 @@ a, button, input, select, summary { -webkit-tap-highlight-color: transparent; }
 .icon-button { display: inline-flex; width: 2.75rem; height: 2.75rem; flex-shrink: 0; align-items: center; justify-content: center; border: 1px solid var(--color-stone-800, #292524); border-radius: 50%; background: var(--color-stone-900, #1c1917); color: var(--color-stone-400, #a8a29e); }
 .icon-button:hover { color: var(--color-lime-300, #bef264); border-color: var(--color-stone-600, #57534e); }
 .eyebrow { color: var(--color-lime-300, #bef264); font-size: .65rem; line-height: 1.5; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; }
-.nav-link { display: flex; min-height: 2.75rem; align-items: center; gap: .75rem; border-radius: 999px; padding: .75rem 1rem; color: var(--color-stone-400, #a8a29e); font-size: .875rem; }
+.nav-link { display: flex; min-height: 2.75rem; align-items: center; gap: .75rem; border-radius: 0.75rem; padding: .75rem 1rem; color: var(--color-stone-400, #a8a29e); font-size: .875rem; }
 .nav-link:hover { color: var(--color-stone-100, #f5f5f4); background: var(--color-stone-800, #292524); }
 .nav-link[aria-current="page"] { color: var(--color-lime-200, #d9f99d); background: rgb(163 230 53 / .12); font-weight: 600; }
 .filter-tab { display: inline-flex; min-height: 2.75rem; align-items: center; justify-content: center; gap: .5rem; border: 1px solid var(--color-stone-800, #292524); border-radius: 999px; padding: .6rem 1rem; background: var(--color-stone-900, #1c1917); color: var(--color-stone-400, #a8a29e); font-size: .8rem; white-space: nowrap; }
 .filter-tab:hover { border-color: var(--color-stone-600, #57534e); color: var(--color-stone-100, #f5f5f4); }
 .filter-tab[aria-pressed="true"], .filter-tab[aria-current="page"] { background: var(--color-lime-500, #84cc16); border-color: var(--color-lime-500, #84cc16); color: var(--color-lime-950, #1a2e05); font-weight: 600; }
+#day-picker .filter-tab {border-radius: 0.75rem;}
 #course-picker[data-active="true"] { border-color: var(--color-lime-300); color: var(--color-lime-300); }
 .course-drawer { position: fixed; inset: 0 0 0 auto; margin: 0; width: min(21rem, calc(100% - 1.5rem)); max-width: none; height: 100dvh; max-height: none; overflow-y: auto; padding: max(1.25rem, env(safe-area-inset-top)) 1.25rem max(1.25rem, env(safe-area-inset-bottom)); border: 0; border-left: 1px solid var(--color-stone-800); background: var(--color-stone-950); color: var(--color-stone-100); }
 .course-drawer[open] { animation: course-drawer-enter .2s ease-out; }
@@ -88,3 +89,64 @@ progress::-moz-progress-bar { background: var(--color-lime-500); border-radius: 
 .animate-toast-out {
     animation: toast-out 0.25s ease-in forwards;
 }
+.button.page-add {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.page-add-icon {
+    width: 1rem;
+    height: 1rem;
+    flex: none;
+}
+
+@media (width < 64rem) {
+    :root {
+        /* Sesuaikan dua nilai ini dengan ukuran dock PUTU. */
+        --putu-dock-height: 4rem;
+        --putu-dock-bottom: 0.75rem;
+
+        --putu-fab-size: 3.5rem;
+        --putu-fab-gap: 1rem;
+        --putu-fab-bottom: calc(
+            env(safe-area-inset-bottom, 0px)
+            + var(--putu-dock-bottom)
+            + var(--putu-dock-height)
+            + var(--putu-fab-gap)
+        );
+    }
+
+    .button.page-add {
+        position: fixed;
+        right: max(1rem, env(safe-area-inset-right, 0px));
+        bottom: var(--putu-fab-bottom);
+        z-index: 30;
+
+        width: var(--putu-fab-size);
+        height: var(--putu-fab-size);
+        min-width: 0;
+        min-height: 0;
+        padding: 0;
+        border-radius: 50%;
+        box-shadow: 0 4px 16px rgb(0 0 0 / 35%);
+    }
+
+    .page-add-icon {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+
+    .page-add-label {
+        display: none;
+    }
+
+    /* Beri ruang agar aksi pada kartu terakhir bisa digulir melewati FAB. */
+    main.workspace-content:has(.page-add) {
+        padding-bottom: calc(
+            var(--putu-fab-bottom) + var(--putu-fab-size) + 1rem
+        );
+    }
+}
+
