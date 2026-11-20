@@ -22,10 +22,10 @@ def client():
     return urllib.request.build_opener(LocalRedirect(), urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
 
 
-def request(browser, path, data=None):
+def request(browser, path, data=None, headers=None):
     encoded = urllib.parse.urlencode(data).encode() if data is not None else None
     try:
-        response = browser.open(base + path, data=encoded, timeout=10)
+        response = browser.open(urllib.request.Request(base + path, data=encoded, headers=headers or {}), timeout=10)
     except urllib.error.HTTPError as error:
         response = error
     with response:
@@ -92,5 +92,22 @@ assert headers['Referrer-Policy'] == 'no-referrer'
 _, html, _ = request(browser, settings, {'_csrf': csrf(html), 'aksi': 'telegram_disconnect'})
 assert 'Koneksi notifikasi diputus.' in html
 assert request(anonymous, '/bin/telegram-worker.php')[0] == 404
-print('PASS: auth, CSRF, preference validation/persistence, per-user isolation, connect redirect, disconnect, CLI guard; no Telegram requests.')
+
+developer = '/app/pages/developer.php'
+assert 'Buka debug WhatsApp' in html
+assert 'Masuk' in request(anonymous, developer)[1]
+status, page, headers = request(browser, developer)
+assert status == 200 and 'Sambungkan ulang' in page
+assert headers['Cache-Control'] == 'no-store'
+assert "frame-ancestors 'none'" in headers['Content-Security-Policy']
+assert request(browser, developer + '?status=1', headers={'X-Forwarded-For': '192.0.2.1'})[0] == 403
+assert request(browser, developer + '?status=1', headers={'Host': 'putu.example.test'})[0] == 403
+assert request(browser, developer, {'aksi': 'wa_reconnect'})[0] == 403
+member = client()
+_, form, _ = request(member, '/app/pages/register.php')
+request(member, '/app/pages/register.php', {'_csrf': csrf(form), 'nama': 'Member User',
+    'email': 'member-' + email, 'password': 'Test-local-only-1729'})
+assert request(member, developer + '?status=1')[0] == 403
+assert request(member, developer, {'aksi': 'wa_reconnect', '_csrf': csrf(form)})[0] == 403
+print('PASS: notification settings, CSRF, access restrictions for Developer QR/reconnect, and CLI guard; no provider messages sent.')
 print('Test login for local visual QA: ' + email)

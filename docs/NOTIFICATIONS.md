@@ -45,8 +45,11 @@ deadline. Penyedia push dapat memilih durasi yang lebih pendek.
    menyimpan VAPID serta sesi WhatsApp di sana. `PUTU_NOTIFICATION_DIR` dapat
    mengganti lokasi pada kedua proses. Tetapkan `PUTU_VAPID_SUBJECT` ke kontak
    pengelola saat deploy. Simpan direktori agar kunci browser dan sesi WA tetap ada.
-4. Buka QR lewat terminal lokal dengan `node notification-gateway/gateway.cjs --show-qr`.
-   Scan dari HP nomor pengirim lewat **Perangkat tertaut → Tautkan perangkat**.
+4. Dari localhost, login sebagai admin dan buka **Pengaturan → Developer → Buka debug WhatsApp**.
+   Jika koneksi terputus, pilih **Sambungkan ulang** agar gateway mencoba sesi yang tersimpan.
+   Jika muncul QR, scan dari HP nomor pengirim lewat **Perangkat tertaut → Tautkan perangkat**.
+   Alternatif terminal: `node notification-gateway/gateway.cjs --show-qr`.
+   Khusus host lokal. Jangan teruskan akses panel melalui reverse proxy.
 5. Jalankan `php bin/telegram-worker.php --check`, lalu jalankan
    `php bin/telegram-worker.php` sebagai proses latar yang tetap hidup. Nama file
    worker dipertahankan untuk setup Telegram lama. Setelah memperbarui kode,

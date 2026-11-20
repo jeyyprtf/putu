@@ -8,6 +8,15 @@ final class NotificationGatewayException extends RuntimeException
     }
 }
 
+function notification_developer_access(?array $user): bool
+{
+    // QR pairing memberi akses ke nomor pengirim, yang digunakan semua kelas.
+    return ($user['role'] ?? '') === 'admin'
+        && in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1'], true)
+        && preg_match('/^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5})?$/iD', $_SERVER['HTTP_HOST'] ?? '') === 1
+        && !isset($_SERVER['HTTP_FORWARDED']) && !isset($_SERVER['HTTP_X_FORWARDED_FOR']);
+}
+
 function notification_gateway(array $input): array
 {
     $directory = env('PUTU_NOTIFICATION_DIR') ?? getenv('HOME') . '/.config/putu/notifications';
@@ -25,7 +34,7 @@ function notification_gateway(array $input): array
             }
             $request = substr($request, $written);
         }
-        $result = json_decode((string) fgets($socket, 4096), true);
+        $result = json_decode((string) fgets($socket, 131072), true);
         return is_int($result['code'] ?? null) ? $result : ['code' => 503];
     } finally {
         fclose($socket);

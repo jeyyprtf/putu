@@ -53,50 +53,119 @@ webPush.setVapidDetails(process.env.PUTU_VAPID_SUBJECT || 'mailto:notifications@
 
 const runPhp = promisify(execFile);
 const chatId = /^\d{5,30}@(c\.us|lid)$/;
+// whatsapp-web.js re-injects on navigation; the old frame can reject outside initialize().
+process.on('unhandledRejection', error => {
+    if (error?.message === 'Execution context was destroyed, most likely because of a navigation.'
+        && error?.stack?.includes('/whatsapp-web.js/src/Client.js:')) {
+        console.warn('Halaman WhatsApp sedang berpindah. Gateway tetap berjalan.');
+        return;
+    }
+    throw error;
+});
+
 let whatsapp;
 let sender = '';
 let qrCode;
+let waState = 'disabled';
+let waStartedAt = 0;
+let reconnecting = false;
 function startWhatsApp() {
     if (!process.argv.includes('--whatsapp')) return;
     const { Client, LocalAuth } = require('whatsapp-web.js');
-    whatsapp = new Client({
+    sender = '';
+    qrCode = undefined;
+    waState = 'starting';
+    waStartedAt = Date.now();
+    const client = new Client({
         authStrategy: new LocalAuth({ dataPath: join(stateDir, 'whatsapp') }),
         userAgent: false,
         webVersionCache: { type: 'none' },
         puppeteer: { headless: true, executablePath: process.env.PUTU_CHROME || '/usr/bin/google-chrome', handleSIGTERM: false },
     });
-    whatsapp.on('qr', qr => {
+    whatsapp = client;
+    client.on('qr', qr => {
+        if (whatsapp !== client) return;
         sender = '';
         qrCode = qr;
+        waState = 'pairing';
         console.log('QR WhatsApp siap. Buka terminal lokal dengan --show-qr.');
     });
-    whatsapp.on('ready', () => {
+    client.on('ready', () => {
+        if (whatsapp !== client) return;
         qrCode = undefined;
-        const wid = whatsapp.info.wid;
-        sender = wid.server === 'c.us' && /^\d{8,15}$/.test(wid.user) ? wid.user : '';
+        const wid = client.info?.wid;
+        sender = wid?.server === 'c.us' && /^\d{8,15}$/.test(wid.user) ? wid.user : '';
+        waState = sender ? 'ready' : 'offline';
         console.log(sender ? 'WhatsApp siap.' : 'Nomor pengirim WhatsApp tidak bisa dibaca.');
     });
-    whatsapp.on('authenticated', () => { qrCode = undefined; });
-    whatsapp.on('disconnected', () => { sender = ''; qrCode = undefined; });
-    whatsapp.on('auth_failure', () => { sender = ''; qrCode = undefined; });
-    whatsapp.on('message', async message => {
-        if (!sender || !chatId.test(message.from) || message.fromMe) return;
+    client.on('authenticated', () => {
+        if (whatsapp !== client) return;
+        qrCode = undefined;
+        waState = 'starting';
+        waStartedAt = Date.now();
+    });
+    const markOffline = () => {
+        if (whatsapp !== client) return;
+        sender = '';
+        qrCode = undefined;
+        waState = 'offline';
+    };
+    client.on('disconnected', markOffline);
+    client.on('auth_failure', markOffline);
+    client.on('message', async message => {
+        if (whatsapp !== client || !sender || !chatId.test(message.from) || message.fromMe) return;
         const command = message.body.trim();
         if (!/^(?:PUTU [a-f0-9]{48}|STOP)$/i.test(command)) return;
         try {
             const child = runPhp('/usr/bin/php', [join(__dirname, '../bin/whatsapp-link.php'), sender, message.from], { timeout: 10000 });
             child.child.stdin.end(command);
             const { stdout } = await child;
-            await whatsapp.sendMessage(message.from, stdout.trim());
+            await client.sendMessage(message.from, stdout.trim());
         } catch {
             console.error('Gagal memproses sambungan WhatsApp.');
         }
     });
-    whatsapp.initialize().catch(async error => {
-        const reason = String(error.message).match(/^(?:net::ERR_[A-Z_]+|Navigation timeout|Failed to launch the browser process|Profile in use|Cannot read properties of undefined)/)?.[0] || error.name;
+    client.initialize().catch(async error => {
+        const reason = String(error?.message).match(/^(?:net::ERR_[A-Z_]+|Navigation timeout|Failed to launch the browser process|Profile in use|Cannot read properties of undefined)/)?.[0] || error?.name || 'startup';
         console.error(`WhatsApp belum siap (${reason}). Web Push tetap berjalan.`);
-        await whatsapp.destroy().catch(() => {});
+        await client.destroy().catch(() => {});
+        markOffline();
     });
+}
+
+function canReconnect() {
+    return !reconnecting && (waState === 'offline' || (waState === 'starting' && Date.now() - waStartedAt > 60000));
+}
+
+async function reconnectWhatsApp() {
+    if (!canReconnect()) return { code: 409 };
+    reconnecting = true;
+    waState = 'starting';
+    waStartedAt = Date.now();
+    qrCode = undefined;
+    try {
+        if (whatsapp?.pupBrowser?.connected) await whatsapp.destroy();
+        startWhatsApp();
+        return { code: 202 };
+    } catch {
+        waState = 'offline';
+        return { code: 503 };
+    } finally {
+        reconnecting = false;
+    }
+}
+
+function whatsappQrImage(value) {
+    // qrcode-terminal already ships the QR encoder used by --show-qr.
+    const QRCode = require('qrcode-terminal/vendor/QRCode');
+    const { L } = require('qrcode-terminal/vendor/QRCode/QRErrorCorrectLevel');
+    const qr = new QRCode(-1, L);
+    qr.addData(value);
+    qr.make();
+    const size = qr.getModuleCount() + 8;
+    const path = qr.modules.map((row, y) => row.map((dark, x) => dark ? `M${x + 4} ${y + 4.5}h1` : '').join('')).join('');
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges"><path fill="white" d="M0 0h${size}v${size}H0z"/><path stroke="black" d="${path}"/></svg>`;
+    return 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64');
 }
 
 function validSubscription(subscription) {
@@ -130,6 +199,8 @@ function validSubscription(subscription) {
 async function handle(input) {
     if (input.action === 'status') return { code: 200, publicKey: keys.publicKey, sender };
     if (input.action === 'qr') return { code: 200, qr: qrCode, sender };
+    if (input.action === 'wa_debug') return { code: 200, state: waState, reconnect: canReconnect(), image: qrCode ? whatsappQrImage(qrCode) : null };
+    if (input.action === 'wa_reconnect') return reconnectWhatsApp();
     if (input.action === 'whatsapp' && chatId.test(input.target) && typeof input.text === 'string') {
         if (!sender) return { code: 503 };
         if (input.sender !== sender) return { code: 422 };

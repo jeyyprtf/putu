@@ -32,7 +32,7 @@
             <label for="status-<?= e($task['id']) ?>" class="sr-only">
                 Status tugas <?= e($task['title']) ?>
             </label>
-            <select id="status-<?= e($task['id']) ?>" name="status" data-task-status class="min-h-11 max-w-full rounded-xl border border-stone-700 bg-stone-950 px-3 py-2 text-xs text-stone-200">
+            <select id="status-<?= e($task['id']) ?>" name="status" data-task-status class="min-h-11 max-w-full rounded-4xl border border-stone-700 bg-stone-950 px-3 py-2 text-xs text-stone-200">
                 <option value="todo" <?= $task['status'] === 'todo' ? 'selected' : '' ?>>
                     Belum dikerjakan
                 </option>
@@ -43,7 +43,7 @@
                     Selesai
                 </option>
             </select>
-            <button type="submit" class="button button-secondary min-h-11 px-4 text-xs">
+            <button type="submit" class="button button-secondary min-h-11 px-4 text-xs rounded-4xl!">
                 Simpan
             </button>
         </form>
@@ -55,7 +55,7 @@
                 <!-- EDIT -->
                 <a
                     href="<?= e(url('admin/tugas', ['edit' => $task['id']])) ?>"
-                    class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-stone-700 px-3 py-2 text-xs font-semibold text-stone-300 transition hover:bg-stone-800 lg:w-auto"
+                    class="rounded-4xl! inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-stone-700 px-3 py-2 text-xs font-semibold text-stone-300 transition hover:bg-stone-800 lg:w-auto"
                 >
                     <?= icon('edit', 'size-4') ?>
                     Edit
@@ -78,7 +78,7 @@
 
                     <button
                         type="submit"
-                        class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-400/40 px-3 py-2 text-xs font-semibold text-red-400 transition hover:bg-red-400/10"
+                        class="rounded-4xl! inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-400/40 px-3 py-2 text-xs font-semibold text-red-400 transition hover:bg-red-400/10"
                     >
                         <?= icon('trash', 'size-4') ?>
                         Hapus

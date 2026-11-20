@@ -206,6 +206,13 @@ try {
                         <?php require __DIR__ . '/../components/notification-channels.php'; ?>
                     <?php endif; ?>
                 </section>
+                <?php if (notification_developer_access($user)): ?>
+                    <section aria-labelledby="developer-title" class="panel mt-5 rounded-3xl! p-5 sm:p-6">
+                        <h2 id="developer-title" class="text-base font-semibold">Developer</h2>
+                        <p class="mt-2 text-sm text-stone-400">Cek status dan sambungkan ulang WhatsApp pengirim PUTU.</p>
+                        <a href="<?= e(url('developer')) ?>" class="button button-secondary mt-4">Buka debug WhatsApp</a>
+                    </section>
+                <?php endif; ?>
             </main>
         </div>
         <?php require __DIR__ . '/../components/dock.php'; ?>

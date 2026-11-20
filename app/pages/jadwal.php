@@ -127,7 +127,7 @@ $classesByDay = jadwal_per_hari($jadwal);
                                                 <div class="grid w-full grid-cols-2 gap-2 lg:flex lg:w-auto lg:shrink-0 lg:items-center">
                                                     <a
                                                         href="<?= e(url('admin/jadwal', ['id' => $class['id']])) ?>"
-                                                        class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-stone-700 px-3 py-2 text-xs font-semibold text-stone-300 transition hover:bg-stone-800 lg:w-auto"
+                                                        class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-4xl border border-stone-700 px-3 py-2 text-xs font-semibold text-stone-300 transition hover:bg-stone-800 lg:w-auto"
                                                     >
                                                         <?= icon('edit', 'size-4') ?>
                                                         Edit
@@ -144,7 +144,7 @@ $classesByDay = jadwal_per_hari($jadwal);
 
                                                         <button
                                                             type="submit"
-                                                            class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-400/40 px-3 py-2 text-xs font-semibold text-red-400 transition hover:bg-red-400/10 lg:w-auto"
+                                                            class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-4xl border border-red-400/40 px-3 py-2 text-xs font-semibold text-red-400 transition hover:bg-red-400/10 lg:w-auto"
                                                         >
                                                             <?= icon('trash', 'size-4') ?>
                                                             Hapus
