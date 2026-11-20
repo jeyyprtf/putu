@@ -107,6 +107,8 @@ try {
     $done = $task($courseA, 'Sudah selesai', '2 hours');
     $expired = $task($courseA, 'Sudah lewat', '-1 minute');
     $future = $task($courseA, 'Masih jauh', '48 hours');
+    $inactive = $task($courseA, 'Tugas nonaktif', '2 hours');
+    db_exec('UPDATE tugas SET aktif = FALSE WHERE id_tugas = :id', ['id' => $inactive]);
     $otherClass = $task($courseB, 'Tugas kelas B', '2 hours');
     db_exec("INSERT INTO progres_tugas (id_user, id_tugas, status, selesai_at) VALUES (:user, :task, 'done', CURRENT_TIMESTAMP)", ['user' => $alice, 'task' => $done]);
     $pending = notification_pending(['telegram']);
@@ -130,10 +132,17 @@ try {
     $webSession = str_repeat('a', 64);
     $subscription = json_encode(['endpoint' => 'https://fcm.googleapis.com/fcm/send/test',
         'keys' => ['p256dh' => str_repeat('a', 87), 'auth' => str_repeat('b', 22)]]);
-    notification_web_save($alice, $webSession, $subscription);
+    $validGateway = static fn (array $input): array => ['code' => $input['action'] === 'web_validate' ? 200 : 400];
+    try {
+        notification_web_save($alice, $webSession, $subscription, static fn (): array => ['code' => 400]);
+        throw new LogicException('Subscription yang ditolak gateway tidak boleh disimpan.');
+    } catch (InvalidArgumentException) {
+        check(telegram_account($alice)['web_subscription'] === null, 'Browser harus tetap belum terhubung.');
+    }
+    notification_web_save($alice, $webSession, $subscription, $validGateway);
     try {
         db()->exec('SAVEPOINT duplicate_subscription');
-        notification_web_save($bob, str_repeat('b', 64), $subscription);
+        notification_web_save($bob, str_repeat('b', 64), $subscription, $validGateway);
         throw new LogicException('Subscription browser tidak boleh dimiliki dua akun.');
     } catch (InvalidArgumentException) {
         db()->exec('ROLLBACK TO SAVEPOINT duplicate_subscription');
@@ -209,6 +218,55 @@ try {
     check((int) $offset['update_offset'] === 0, 'Offset polling harus tersimpan di DB.');
     $cooldown = new TelegramApiException(429, 123);
     check($cooldown->retryAfter === 123 && $cooldown->getCode() === 429, 'Retry-after tidak boleh dipotong.');
+
+    telegram_handle_update($update(101, '/start ' . $tokenFromUrl(telegram_connect_url($alice))), $send);
+    parse_str(parse_url(notification_whatsapp_url($alice, $sender), PHP_URL_QUERY), $waQuery);
+    notification_whatsapp_command($sender, '123456@lid', $waQuery['text']);
+    notification_web_save($alice, $webSession, $subscription, $validGateway);
+    $staleBrowser = telegram_account($alice);
+    db_exec("UPDATE putu_bot.accounts SET wa_connected_at = CURRENT_TIMESTAMP - INTERVAL '2 minutes',
+             web_connected_at = CURRENT_TIMESTAMP - INTERVAL '1 microsecond' WHERE id_user = :id", ['id' => $alice]);
+    notification_web_expire($alice, $staleBrowser['web_subscription'], $staleBrowser['web_connected_at']);
+    check(telegram_account($alice)['web_subscription'] !== null, 'Respons lama tidak boleh memutus browser yang baru ditautkan.');
+    db_exec("INSERT INTO pengumuman (id_kelas, dibuat_oleh, judul, isi_pengumuman, created_at)
+             SELECT :class, :user, 'Backlog WhatsApp', 'test', CURRENT_TIMESTAMP - INTERVAL '1 minute'
+             FROM generate_series(1, 100)", ['class' => $classA, 'user' => $alice]);
+    $near = $task($courseA, 'Deadline 10 menit', '10 minutes');
+    $news($classA, '0 seconds');
+    $retryAt = [];
+    $sentTtl = [];
+    $attempts = [];
+    $captureSend = function (array $item, string $text, int $ttl) use (&$sentTtl, &$attempts, $near): void {
+        $channel = $item['channel'];
+        $attempts[$channel] = ($attempts[$channel] ?? 0) + 1;
+        if ($channel === 'whatsapp') {
+            throw new NotificationGatewayException(429, 123);
+        }
+        if ($channel === 'web' && ((int) $item['source_id'] === $near || $item['kind'] === 'pengumuman')) {
+            $sentTtl[$item['kind']] = $ttl;
+        }
+    };
+    $before = time();
+    notification_deliver(['whatsapp', 'telegram', 'web'], $captureSend, $retryAt);
+    check($attempts['whatsapp'] === 1 && !empty($attempts['telegram']) && !empty($attempts['web']),
+        'Batch WhatsApp gagal tidak boleh menghalangi Telegram dan Web Push.');
+    check($retryAt['whatsapp'] >= $before + 123, 'Worker harus mengikuti Retry-After gateway.');
+    check($sentTtl['deadline'] >= 590 && $sentTtl['deadline'] <= 600 && $sentTtl['pengumuman'] === 3600,
+        'TTL pengingat dibatasi deadline. TTL pengumuman satu jam.');
+    notification_deliver(['whatsapp'], $captureSend, $retryAt);
+    check($attempts['whatsapp'] === 1 && count(notification_pending(['whatsapp'])) === 100,
+        'Cooldown mencegah percobaan ulang dan pengiriman gagal tetap tertunda.');
+
+    $task($courseA, 'Subscription kedaluwarsa', '30 minutes');
+    $failWeb = static function (int $code) use (&$retryAt): int {
+        return notification_deliver(['web'], static function () use ($code): void {
+            throw new NotificationGatewayException($code);
+        }, $retryAt);
+    };
+    check($failWeb(503) === 0 && telegram_account($alice)['web_subscription'] !== null, '503 harus mempertahankan koneksi browser.');
+    unset($retryAt['web']);
+    check($failWeb(410) === 0 && telegram_account($alice)['web_subscription'] === null, '410 harus melepas subscription kedaluwarsa.');
+
     echo "PASS: koneksi aman, token, preferensi, isolasi kelas, progres, deadline, pengumuman, retry, deduplikasi, pembatalan, /stop, dan RLS.\n";
 } finally {
     db()->rollBack();

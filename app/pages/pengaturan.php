@@ -52,8 +52,8 @@ try {
             try {
                 notification_send_gateway($channel, $target, 'Tes notifikasi PUTU berhasil diterima.', 'app/pages/pengaturan.php', $telegram['wa_sender'] ?? '');
             } catch (RuntimeException $error) {
-                if ($channel === 'web' && in_array($error->getCode(), [404, 410], true)) {
-                    notification_disconnect((int) $user['id_user'], 'web');
+                if ($channel === 'web' && in_array($error->getCode(), [400, 404, 410], true)) {
+                    notification_web_expire((int) $user['id_user'], $target, $telegram['web_connected_at']);
                     redirect(url('pengaturan', ['telegram' => 'expired']));
                 }
                 throw new InvalidArgumentException('Pesan tes gagal dikirim. Periksa koneksi kanal lalu coba lagi.');

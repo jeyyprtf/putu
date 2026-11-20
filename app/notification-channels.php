@@ -1,5 +1,13 @@
 <?php
 
+final class NotificationGatewayException extends RuntimeException
+{
+    public function __construct(int $code, public readonly int $retryAfter = 0)
+    {
+        parent::__construct('Pengiriman notifikasi gagal.', $code);
+    }
+}
+
 function notification_gateway(array $input): array
 {
     $directory = env('PUTU_NOTIFICATION_DIR') ?? getenv('HOME') . '/.config/putu/notifications';
@@ -17,7 +25,8 @@ function notification_gateway(array $input): array
             }
             $request = substr($request, $written);
         }
-        return json_decode((string) fgets($socket, 4096), true) ?? ['code' => 503];
+        $result = json_decode((string) fgets($socket, 4096), true);
+        return is_int($result['code'] ?? null) ? $result : ['code' => 503];
     } finally {
         fclose($socket);
     }
@@ -63,7 +72,7 @@ function notification_whatsapp_command(string $sender, string $chat, string $com
     return $linked ? 'WhatsApp terhubung ke PUTU. Kirim STOP untuk berhenti.' : 'Tautan tidak berlaku atau WhatsApp sudah terhubung.';
 }
 
-function notification_web_save(int $userId, string $session, string $input): void
+function notification_web_save(int $userId, string $session, string $input, ?callable $gateway = null): void
 {
     $value = strlen($input) < 4096 ? json_decode($input, true) : null;
     $endpoint = $value['endpoint'] ?? null;
@@ -76,14 +85,21 @@ function notification_web_save(int $userId, string $session, string $input): voi
         || !is_string($auth) || !preg_match('/^[A-Za-z0-9_-]{22}$/D', $auth)) {
         throw new InvalidArgumentException('Langganan notifikasi browser tidak valid.');
     }
-    $subscription = json_encode(['endpoint' => $endpoint, 'keys' => ['p256dh' => $p256dh, 'auth' => $auth]], JSON_THROW_ON_ERROR);
+    $subscription = ['endpoint' => $endpoint, 'keys' => ['p256dh' => $p256dh, 'auth' => $auth]];
+    $result = ($gateway ?? 'notification_gateway')(['action' => 'web_validate', 'subscription' => $subscription]);
+    if ($result['code'] === 400) {
+        throw new InvalidArgumentException('Alamat atau kunci langganan browser tidak didukung.');
+    }
+    if ($result['code'] !== 200) {
+        throw new InvalidArgumentException('Layanan Web Push belum siap. Coba lagi nanti.');
+    }
     try {
         db_exec(
             'INSERT INTO putu_bot.accounts (id_user, web_subscription, web_session, web_connected_at)
              VALUES (:id, :subscription, :session, CURRENT_TIMESTAMP)
              ON CONFLICT (id_user) DO UPDATE SET web_subscription = EXCLUDED.web_subscription,
                 web_session = EXCLUDED.web_session, web_connected_at = EXCLUDED.web_connected_at',
-            ['id' => $userId, 'subscription' => $subscription, 'session' => $session]
+            ['id' => $userId, 'subscription' => json_encode($subscription, JSON_THROW_ON_ERROR), 'session' => $session]
         );
     } catch (PDOException $error) {
         if ($error->getCode() !== '23505') {
@@ -105,13 +121,20 @@ function notification_disconnect(int $userId, string $channel, ?string $session 
     }
 }
 
-function notification_send_gateway(string $channel, string $target, string $text, string $path, string $sender = ''): void
+function notification_web_expire(int $userId, string $subscription, string $connected): void
+{
+    db_exec('UPDATE putu_bot.accounts SET web_subscription = NULL, web_session = NULL, web_connected_at = NULL
+             WHERE id_user = :id AND web_subscription = :subscription AND web_connected_at = :connected',
+            ['id' => $userId, 'subscription' => $subscription, 'connected' => $connected]);
+}
+
+function notification_send_gateway(string $channel, string $target, string $text, string $path, string $sender = '', int $ttl = 120): void
 {
     $result = $channel === 'whatsapp'
         ? notification_gateway(['action' => $channel, 'target' => $target, 'sender' => $sender, 'text' => $text])
         : notification_gateway(['action' => $channel, 'subscription' => json_decode($target, true),
-            'payload' => ['title' => 'PUTU', 'body' => $text, 'path' => $path]]);
+            'payload' => ['title' => 'PUTU', 'body' => $text, 'path' => $path], 'ttl' => $ttl]);
     if ($result['code'] !== 200) {
-        throw new RuntimeException('Pengiriman notifikasi gagal.', (int) $result['code']);
+        throw new NotificationGatewayException($result['code'], (int) ($result['retryAfter'] ?? 0));
     }
 }

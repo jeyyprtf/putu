@@ -30,7 +30,7 @@ function notification_pending(array $channels, ?array $previous = null): array
             JOIN public.mata_kuliah m ON m.id_kelas = r.id_kelas
             JOIN public.tugas t USING (id_matkul)
             LEFT JOIN public.progres_tugas p ON p.id_user = r.id_user AND p.id_tugas = t.id_tugas
-            WHERE r.reminders_enabled AND COALESCE(p.status, 'todo') <> 'done'
+            WHERE r.reminders_enabled AND t.aktif = TRUE AND COALESCE(p.status, 'todo') <> 'done'
               AND t.deadline > CURRENT_TIMESTAMP
               AND t.deadline <= CURRENT_TIMESTAMP + r.reminder_hours * INTERVAL '1 hour'
             UNION ALL
@@ -73,43 +73,51 @@ function notification_text(array $item): string
 }
 
 /** Periksa ulang akses dan pilihan terbaru sebelum setiap kiriman. */
-function notification_deliver(array $channels, callable $send): int
+function notification_deliver(array $channels, callable $send, array &$retryAt = []): int
 {
     $sent = 0;
-    $paused = [];
-    foreach (notification_pending($channels) as $item) {
-        $channel = $item['channel'];
-        if (isset($paused[$channel])) {
+    foreach ($channels as $channel) {
+        if (($retryAt[$channel] ?? 0) > time()) {
             continue;
         }
-        $current = notification_pending([$channel], $item)[0] ?? null;
-        if ($current === null || $current['target'] !== $item['target'] || $current['connected'] !== $item['connected']) {
-            continue;
-        }
-        try {
-            $send($current, notification_text($current));
-        } catch (RuntimeException $error) {
-            $code = $error->getCode();
-            if ($channel === 'telegram' && $code === 403) {
-                db_exec('UPDATE putu_bot.accounts SET chat_id = NULL, connected_at = NULL
-                         WHERE id_user = :id AND chat_id = :target', ['id' => $item['id_user'], 'target' => $item['target']]);
-            } elseif ($channel === 'web' && in_array($code, [404, 410], true)) {
-                db_exec('UPDATE putu_bot.accounts SET web_subscription = NULL, web_session = NULL, web_connected_at = NULL
-                         WHERE id_user = :id AND web_subscription = :target', ['id' => $item['id_user'], 'target' => $item['target']]);
-            } elseif (in_array($code, [401, 409, 429, 503], true)) {
-                $paused[$channel] = true;
+        foreach (notification_pending([$channel]) as $item) {
+            $current = notification_pending([$channel], $item)[0] ?? null;
+            if ($current === null || $current['target'] !== $item['target'] || $current['connected'] !== $item['connected']) {
+                continue;
             }
-            error_log('[notifikasi] ' . $channel . ' gagal, kode ' . $code . '.');
-            continue;
+            $ttl = $current['kind'] === 'deadline' ? min(3600, strtotime($current['deadline']) - time()) : 3600;
+            if ($ttl < 1) {
+                continue;
+            }
+            try {
+                $send($current, notification_text($current), $ttl);
+            } catch (RuntimeException $error) {
+                $code = $error->getCode();
+                error_log('[notifikasi] ' . $channel . ' gagal, kode ' . $code . '.');
+                if ($channel === 'telegram' && $code === 403) {
+                    db_exec('UPDATE putu_bot.accounts SET chat_id = NULL, connected_at = NULL
+                             WHERE id_user = :id AND chat_id = :target AND connected_at = :connected',
+                            ['id' => $item['id_user'], 'target' => $item['target'], 'connected' => $item['connected']]);
+                } elseif ($channel === 'web' && in_array($code, [400, 404, 410], true)) {
+                    notification_web_expire((int) $item['id_user'], $item['target'], $item['connected']);
+                } elseif ($code >= 500 || in_array($code, [0, 401, 409, 429], true)) {
+                    $retryAfter = $error instanceof NotificationGatewayException
+                        || ($code === 429 && $error instanceof TelegramApiException)
+                        ? $error->retryAfter : 0;
+                    $retryAt[$channel] = time() + ($retryAfter > 0 ? $retryAfter : 30);
+                    break;
+                }
+                continue;
+            }
+            // shortcut: respons yang hilang setelah kiriman diterima bisa menyebabkan duplikat saat dicoba ulang.
+            db_exec(
+                'INSERT INTO putu_bot.deliveries (id_user, kind, source_id, version, channel)
+                 VALUES (:user, :kind, :source, :version, :channel) ON CONFLICT DO NOTHING',
+                ['user' => $item['id_user'], 'kind' => $item['kind'], 'source' => $item['source_id'],
+                    'version' => $item['version'], 'channel' => $channel]
+            );
+            $sent++;
         }
-        // shortcut: respons yang hilang setelah kiriman diterima bisa menyebabkan duplikat saat dicoba ulang.
-        db_exec(
-            'INSERT INTO putu_bot.deliveries (id_user, kind, source_id, version, channel)
-             VALUES (:user, :kind, :source, :version, :channel) ON CONFLICT DO NOTHING',
-            ['user' => $item['id_user'], 'kind' => $item['kind'], 'source' => $item['source_id'],
-                'version' => $item['version'], 'channel' => $channel]
-        );
-        $sent++;
     }
     return $sent;
 }

@@ -16,11 +16,20 @@ kirim. Riwayat unik berdasarkan user, kejadian, deadline, dan kanal. Retry setel
 respons hilang masih bisa menggandakan pesan. Tugas yang lewat tenggat dilewati.
 Pengumuman baru dikirim ke kanal yang sudah terhubung saat diumumkan.
 
+Setiap kanal punya batch dan jeda retry sendiri di memori worker. Web Push
+menahan pengumuman hingga satu jam dan pengingat hingga satu jam atau sampai
+deadline. Penyedia push dapat memilih durasi yang lebih pendek.
+
 ## Setup
 
 1. Jalankan [TELEGRAM.sql](TELEGRAM.sql) pada database baru, lalu jalankan
    [NOTIFICATIONS.sql](NOTIFICATIONS.sql) sekali. Pada database yang sudah pakai
    Telegram, langsung jalankan NOTIFICATIONS.sql. Riwayat lama tetap milik Telegram.
+   Jika database dibuat dari PDM lama, pastikan kolom status tugas sudah ada.
+
+   ```sql
+   ALTER TABLE public.tugas ADD COLUMN IF NOT EXISTS aktif BOOLEAN NOT NULL DEFAULT TRUE;
+   ```
 2. Pastikan `APP_URL` dapat dibuka penerima pesan. Browser butuh HTTPS untuk
    deployment. `localhost:8000` cukup untuk uji lokal di perangkat yang sama.
 3. Dari root PUTU, jalankan perintah ini di host yang sama dengan PHP web dan worker.
@@ -40,7 +49,8 @@ Pengumuman baru dikirim ke kanal yang sudah terhubung saat diumumkan.
    Scan dari HP nomor pengirim lewat **Perangkat tertaut → Tautkan perangkat**.
 5. Jalankan `php bin/telegram-worker.php --check`, lalu jalankan
    `php bin/telegram-worker.php` sebagai proses latar yang tetap hidup. Nama file
-   worker dipertahankan untuk setup Telegram lama.
+   worker dipertahankan untuk setup Telegram lama. Setelah memperbarui kode,
+   restart worker dan gateway agar keduanya memakai versi terbaru.
 6. Login sebagai user, buka Pengaturan PUTU, hubungkan kanal pilihan dan jalankan
    tes masing-masing. Link WhatsApp membuka pesan kode sekali pakai. User harus
    mengirim pesan itu sendiri. User dapat mengirim `STOP` untuk berhenti.

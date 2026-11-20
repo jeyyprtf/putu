@@ -67,6 +67,7 @@ CREATE TABLE public.tugas (
     deskripsi TEXT NOT NULL,
     deadline TIMESTAMPTZ NOT NULL,
     jenis_tugas VARCHAR(20) NOT NULL DEFAULT 'tugas',
+    aktif BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT pk_tugas PRIMARY KEY (id_tugas),
     CONSTRAINT ck_tugas_jenis CHECK (jenis_tugas IN ('tugas', 'praktikum', 'proyek'))
 );

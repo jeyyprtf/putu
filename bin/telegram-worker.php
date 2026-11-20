@@ -18,6 +18,7 @@ if (isset($argv[1]) && $argv[1] !== '--check') {
 try {
     db_one('SELECT update_offset FROM putu_bot.state WHERE singleton');
     db_one('SELECT channel FROM putu_bot.deliveries LIMIT 1');
+    db_one('SELECT aktif FROM public.tugas LIMIT 1');
     if (($argv[1] ?? '') === '--check') {
         $me = telegram_api('getMe');
         if (strcasecmp($me['username'], telegram_config('TELEGRAM_BOT_USERNAME')) !== 0) {
@@ -57,11 +58,11 @@ $send = function (int $chatId, string $text) use (&$lastSent): void {
 };
 
 echo "Worker notifikasi PUTU berjalan.\n";
-$pollAfter = 0;
+$retryAt = [];
 while (true) {
     try {
         $channels = [];
-        if (telegram_configured() && time() >= $pollAfter) {
+        if (telegram_configured() && time() >= ($retryAt['telegram'] ?? 0)) {
             try {
                 $state = db_one('SELECT update_offset FROM putu_bot.state WHERE singleton');
                 $updates = telegram_api('getUpdates', ['offset' => (int) $state['update_offset'],
@@ -78,25 +79,20 @@ while (true) {
                 $channels[] = 'telegram';
             } catch (TelegramApiException $error) {
                 error_log($error->getMessage());
-                $pollAfter = time() + max(20, $error->retryAfter);
+                $retryAt['telegram'] = time() + max(20, $error->retryAfter);
             }
         }
         $gateway = notification_gateway(['action' => 'status']);
         if (!empty($gateway['publicKey'])) $channels[] = 'web';
         if (!empty($gateway['sender'])) $channels[] = 'whatsapp';
-        notification_deliver($channels, function (array $item, string $text) use ($send, &$pollAfter): void {
+        notification_deliver($channels, function (array $item, string $text, int $ttl) use ($send): void {
             if ($item['channel'] === 'telegram') {
-                try {
-                    $send((int) $item['target'], $text);
-                } catch (TelegramApiException $error) {
-                    if ($error->getCode() === 429) $pollAfter = time() + $error->retryAfter;
-                    throw $error;
-                }
+                $send((int) $item['target'], $text);
                 return;
             }
             $path = $item['kind'] === 'deadline' ? 'app/pages/tugas.php' : 'app/pages/pengumuman.php';
-            notification_send_gateway($item['channel'], $item['target'], $text, $path, $item['wa_sender'] ?? '');
-        });
+            notification_send_gateway($item['channel'], $item['target'], $text, $path, $item['wa_sender'] ?? '', $ttl);
+        }, $retryAt);
         if (!in_array('telegram', $channels, true)) sleep(5);
     } catch (Throwable) {
         fwrite(STDERR, "[notifikasi] Worker gagal. Periksa koneksi database dan konfigurasi.\n");

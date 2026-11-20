@@ -1,4 +1,5 @@
 const { execFile } = require('node:child_process');
+const { ECDH } = require('node:crypto');
 const { chmodSync, lstatSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } = require('node:fs');
 const { createConnection, createServer } = require('node:net');
 const { homedir } = require('node:os');
@@ -98,30 +99,58 @@ function startWhatsApp() {
     });
 }
 
-function validEndpoint(endpoint) {
+function validSubscription(subscription) {
+    const endpoint = subscription?.endpoint;
+    const { p256dh, auth } = subscription?.keys ?? {};
+    if (typeof endpoint !== 'string' || endpoint.length > 2048 || !URL.canParse(endpoint)
+        || typeof p256dh !== 'string' || !/^[A-Za-z0-9_-]{87}$/.test(p256dh)
+        || typeof auth !== 'string' || !/^[A-Za-z0-9_-]{22}$/.test(auth)) return false;
+
     const url = new URL(endpoint);
     const host = url.hostname;
-    return url.protocol === 'https:' && !url.port && !url.username && !url.password && !url.hash && (
+    const allowedHost = (
         host === 'fcm.googleapis.com' || host === 'updates.push.services.mozilla.com' ||
         host === 'web.push.apple.com' || host.endsWith('.push.apple.com') ||
         host.endsWith('.notify.windows.com')
     );
+    if (!allowedHost || url.protocol !== 'https:' || url.port || url.username || url.password || url.hash) return false;
+
+    const publicKey = Buffer.from(p256dh, 'base64url');
+    const secret = Buffer.from(auth, 'base64url');
+    if (publicKey[0] !== 4 || publicKey.toString('base64url') !== p256dh
+        || secret.toString('base64url') !== auth) return false;
+    try {
+        ECDH.convertKey(publicKey, 'prime256v1');
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 async function handle(input) {
     if (input.action === 'status') return { code: 200, publicKey: keys.publicKey, sender };
     if (input.action === 'qr') return { code: 200, qr: qrCode, sender };
     if (input.action === 'whatsapp' && chatId.test(input.target) && typeof input.text === 'string') {
-        if (!sender || input.sender !== sender) return { code: 503 };
-        await whatsapp.sendMessage(input.target, input.text, { linkPreview: false });
-        return { code: 200 };
+        if (!sender) return { code: 503 };
+        if (input.sender !== sender) return { code: 422 };
+        const message = await whatsapp.sendMessage(input.target, input.text, {
+            linkPreview: false, sendSeen: false, waitUntilMsgSent: true,
+        });
+        return { code: message?.id ? 200 : 422 };
     }
-    if (input.action === 'web' && validEndpoint(input.subscription?.endpoint)) {
+    if (input.action === 'web_validate' || input.action === 'web') {
+        if (!validSubscription(input.subscription)) return { code: 400 };
+        if (input.action === 'web_validate') return { code: 200 };
+        const ttl = input.ttl ?? 120;
+        if (!Number.isInteger(ttl) || ttl < 1 || ttl > 3600) return { code: 422 };
         try {
-            await webPush.sendNotification(input.subscription, JSON.stringify(input.payload), { TTL: 120, timeout: 5000 });
+            await webPush.sendNotification(input.subscription, JSON.stringify(input.payload), { TTL: ttl, timeout: 5000 });
             return { code: 200 };
         } catch (error) {
-            return { code: [404, 410, 429].includes(error.statusCode) ? error.statusCode : 503 };
+            const code = [404, 410, 429].includes(error.statusCode) ? error.statusCode : 503;
+            const header = error.headers?.['retry-after'] ?? '';
+            const seconds = /^\d+$/.test(header) ? Number(header) : Math.ceil((Date.parse(header) - Date.now()) / 1000);
+            return { code, retryAfter: Number.isSafeInteger(seconds) && seconds > 0 ? seconds : 0 };
         }
     }
     return { code: 400 };
