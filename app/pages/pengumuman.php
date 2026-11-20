@@ -169,7 +169,12 @@ $bukaId = is_string($_GET['id'] ?? null) ? $_GET['id'] : '';
                         </footer>
                     </article>
                 <?php endforeach; ?>
-                <div id="news-empty" hidden class="panel px-6 py-14 text-center">
+                <div
+                    id="news-empty"
+                    hidden
+                    data-has-news="<?= $pengumuman !== [] && $galatMuat === '' ? 'true' : 'false' ?>"
+                    class="panel px-6 py-14 text-center"
+                >
                     <h2 class="text-lg font-semibold">Belum ada pengumuman untuk filter ini.</h2>
                     <button type="button" data-news-reset class="button button-secondary mt-5">Lihat semua</button>
                 </div>

@@ -80,7 +80,9 @@
 
             const count = one('#task-result [data-task-count]');
             if (count) count.textContent = String(visible);
-            if (one('#tasks-empty')) one('#tasks-empty').hidden = visible !== 0;
+            if (one('#tasks-empty')) {
+                one('#tasks-empty').hidden = cards.length === 0 || visible !== 0;
+            }
         };
 
         // Label badge dihitung ulang di browser supaya tetap akurat walau
@@ -209,14 +211,23 @@
     }
 
     const filterNews = (category) => {
+        const cards = all('[data-news-card]');
         let visible = 0;
-        for (const card of all('[data-news-card]')) {
+
+        for (const card of cards) {
             card.hidden = category === 'Penting' && card.dataset.important !== 'true';
             if (!card.hidden) visible++;
         }
-        for (const button of all('[data-news-filter]')) button.setAttribute('aria-pressed', String(button.dataset.newsFilter === category));
-        one('#news-empty').hidden = visible !== 0;
-        one('#news-result').textContent = `${visible} pengumuman`;
+
+        for (const button of all('[data-news-filter]')) {
+            button.setAttribute('aria-pressed', String(button.dataset.newsFilter === category));
+        }
+
+        const empty = one('#news-empty');
+        if (empty) empty.hidden = empty.dataset.hasNews !== 'true' || visible !== 0;
+
+        const result = one('#news-result');
+        if (result) result.textContent = `${visible} pengumuman`;
     };
     for (const button of all('[data-news-filter]')) button.addEventListener('click', () => filterNews(button.dataset.newsFilter));
     one('[data-news-reset]')?.addEventListener('click', () => filterNews('Semua'));
