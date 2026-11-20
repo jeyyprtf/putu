@@ -28,31 +28,41 @@ if (is_post()) {
         // Batas bcrypt: lebih dari 72 byte akan terpotong diam-diam.
         $error = 'Password maksimal 72 karakter.';
     } else {
-        try {
-            $user = db_one(
-                "INSERT INTO users (nama, email, password_hash, role)
-                 VALUES (:nama, :email, :hash, 'mahasiswa') RETURNING id_user",
-                [
-                    'nama'  => $old['nama'],
-                    'email' => $old['email'],
-                    'hash'  => password_hash($password, PASSWORD_DEFAULT),
-                ]
+    try {
+        // Periksa email pada database PUTU yang sudah ada.
+        $existing = db_one(
+            "SELECT id_user
+             FROM users
+             WHERE LOWER(email) = :email",
+            ['email' => $old['email']]
+        );
+
+        if ($existing) {
+            $error = 'Email sudah terdaftar. Silakan masuk.';
+        } else {
+            // Pendaftaran ditangani Supabase Auth.
+            $result = supabase_auth_register(
+                $old['nama'],
+                $old['email'],
+                $password
             );
-            login_user((int) $user['id_user']);
-            redirect(url('gabung'));
-        } catch (PDOException $e) {
-            if ($e->getCode() === '23505') { // unique_violation pada email
-                $error = 'Email sudah terdaftar. Silakan masuk.';
+
+            if ($result['success']) {
+                // Jangan membuat session PHP sebelum email diverifikasi.
+                redirect(url('cek-email'));
+            } elseif ($result['status'] === 429) {
+                $error = 'Terlalu banyak permintaan. Coba lagi nanti.';
             } else {
-                error_log('[register] ' . $e->getMessage());
-                $error = 'Terjadi kesalahan di server. Coba lagi nanti.';
+                $error = 'Pendaftaran belum berhasil. Periksa email dan coba lagi.';
             }
-        } catch (Throwable $e) {
-            error_log('[register] ' . $e->getMessage());
-            $error = 'Terjadi kesalahan di server. Coba lagi nanti.';
         }
+    } catch (Throwable $e) {
+        error_log('[register] ' . $e->getMessage());
+        $error = 'Terjadi kesalahan di server. Coba lagi nanti.';
     }
 }
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
