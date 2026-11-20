@@ -61,7 +61,8 @@ function admin_tugas_simpan(
         throw new InvalidArgumentException('Lengkapi semua kolom wajib.');
     }
 
-    if (mb_strlen($judul) > 200) {
+    $panjangJudul = text_length($judul);
+    if ($panjangJudul === null || $panjangJudul > 200) {
         throw new InvalidArgumentException('Judul maksimal 200 karakter.');
     }
 
@@ -205,7 +206,8 @@ function admin_tugas_update(
         throw new InvalidArgumentException('Lengkapi semua kolom wajib.');
     }
 
-    if (mb_strlen($judul) > 200) {
+    $panjangJudul = text_length($judul);
+    if ($panjangJudul === null || $panjangJudul > 200) {
         throw new InvalidArgumentException('Judul maksimal 200 karakter.');
     }
 
