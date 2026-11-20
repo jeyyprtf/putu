@@ -7,6 +7,8 @@ if (PHP_SAPI !== 'cli') {
 require __DIR__ . '/../app/config/database.php';
 require __DIR__ . '/../app/telegram.php';
 require __DIR__ . '/../app/telegram-api.php';
+require __DIR__ . '/../app/notification-channels.php';
+require __DIR__ . '/../app/notifications.php';
 
 if (isset($argv[1]) && $argv[1] !== '--check') {
     fwrite(STDERR, "Pemakaian: php bin/telegram-worker.php [--check]\n");
@@ -14,20 +16,19 @@ if (isset($argv[1]) && $argv[1] !== '--check') {
 }
 
 try {
-    if (!telegram_configured()) {
-        throw new RuntimeException('Isi app/config/telegram.local.php sesuai contoh terlebih dahulu.');
-    }
-    $me = telegram_api('getMe');
-    if (strcasecmp($me['username'], telegram_config('TELEGRAM_BOT_USERNAME')) !== 0) {
-        throw new RuntimeException('Username konfigurasi tidak cocok dengan token bot.');
-    }
-    $webhook = telegram_api('getWebhookInfo');
-    if ($webhook['url'] !== '') {
-        throw new RuntimeException('Bot masih memakai webhook. Nonaktifkan webhook bot ini sebelum menggunakan worker polling.');
-    }
     db_one('SELECT update_offset FROM putu_bot.state WHERE singleton');
+    db_one('SELECT channel FROM putu_bot.deliveries LIMIT 1');
     if (($argv[1] ?? '') === '--check') {
-        echo "OK: bot @{$me['username']}, koneksi database, dan tabel Telegram siap.\n";
+        $me = telegram_api('getMe');
+        if (strcasecmp($me['username'], telegram_config('TELEGRAM_BOT_USERNAME')) !== 0) {
+            throw new RuntimeException('Username konfigurasi tidak cocok dengan token bot.');
+        }
+        if (telegram_api('getWebhookInfo')['url'] !== '') {
+            throw new RuntimeException('Bot masih memakai webhook.');
+        }
+        $gateway = notification_gateway(['action' => 'status']);
+        echo "OK: Telegram dan database siap. Web Push " . (!empty($gateway['publicKey']) ? 'siap' : 'belum siap')
+            . ', WhatsApp ' . (!empty($gateway['sender']) ? 'siap' : 'belum terhubung') . ".\n";
         exit;
     }
     $lock = db_one('SELECT pg_try_advisory_lock(1886745717, 1) AS locked');
@@ -55,41 +56,50 @@ $send = function (int $chatId, string $text) use (&$lastSent): void {
     }
 };
 
-echo "Bot @{$me['username']} berjalan. Ctrl+C untuk berhenti.\n";
+echo "Worker notifikasi PUTU berjalan.\n";
+$pollAfter = 0;
 while (true) {
     try {
-        $state = db_one('SELECT update_offset FROM putu_bot.state WHERE singleton');
-        $updates = telegram_api('getUpdates', ['offset' => (int) $state['update_offset'],
-            'timeout' => 25, 'allowed_updates' => ['message']]);
-        foreach ($updates as $update) {
+        $channels = [];
+        if (telegram_configured() && time() >= $pollAfter) {
             try {
-                telegram_handle_update($update, $send);
-            } catch (TelegramApiException $e) {
-                if ($e->getCode() !== 403) {
-                    throw $e;
+                $state = db_one('SELECT update_offset FROM putu_bot.state WHERE singleton');
+                $updates = telegram_api('getUpdates', ['offset' => (int) $state['update_offset'],
+                    'timeout' => 20, 'allowed_updates' => ['message']]);
+                foreach ($updates as $update) {
+                    try {
+                        telegram_handle_update($update, $send);
+                    } catch (TelegramApiException $error) {
+                        if ($error->getCode() !== 403) throw $error;
+                    }
+                    db_exec('UPDATE putu_bot.state SET update_offset = :offset WHERE singleton',
+                        ['offset' => $update['update_id'] + 1]);
                 }
-                $chatId = $update['message']['chat']['id'] ?? 0;
-                $account = db_one('SELECT id_user FROM putu_bot.accounts WHERE chat_id = :chat', ['chat' => $chatId]);
-                if ($account !== null) {
-                    telegram_disconnect((int) $account['id_user']);
-                }
+                $channels[] = 'telegram';
+            } catch (TelegramApiException $error) {
+                error_log($error->getMessage());
+                $pollAfter = time() + max(20, $error->retryAfter);
             }
-            db_exec('UPDATE putu_bot.state SET update_offset = :offset WHERE singleton',
-                ['offset' => $update['update_id'] + 1]);
         }
-        telegram_deliver($send);
-    } catch (PDOException $e) {
-        // Koneksi yang hilang juga melepas advisory lock. Keluar agar supervisor membuka sesi baru.
-        fwrite(STDERR, "[telegram] Koneksi/query database gagal. Periksa database lalu jalankan ulang worker.\n");
-        exit(1);
-    } catch (TelegramApiException $e) {
-        fwrite(STDERR, $e->getMessage() . "\n");
-        if (in_array($e->getCode(), [401, 409], true)) {
-            exit(1);
-        }
-        sleep($e->retryAfter);
-    } catch (Throwable $e) {
-        fwrite(STDERR, "[telegram] Worker gagal; periksa konfigurasi dan database.\n");
+        $gateway = notification_gateway(['action' => 'status']);
+        if (!empty($gateway['publicKey'])) $channels[] = 'web';
+        if (!empty($gateway['sender'])) $channels[] = 'whatsapp';
+        notification_deliver($channels, function (array $item, string $text) use ($send, &$pollAfter): void {
+            if ($item['channel'] === 'telegram') {
+                try {
+                    $send((int) $item['target'], $text);
+                } catch (TelegramApiException $error) {
+                    if ($error->getCode() === 429) $pollAfter = time() + $error->retryAfter;
+                    throw $error;
+                }
+                return;
+            }
+            $path = $item['kind'] === 'deadline' ? 'app/pages/tugas.php' : 'app/pages/pengumuman.php';
+            notification_send_gateway($item['channel'], $item['target'], $text, $path, $item['wa_sender'] ?? '');
+        });
+        if (!in_array('telegram', $channels, true)) sleep(5);
+    } catch (Throwable) {
+        fwrite(STDERR, "[notifikasi] Worker gagal. Periksa koneksi database dan konfigurasi.\n");
         exit(1);
     }
 }

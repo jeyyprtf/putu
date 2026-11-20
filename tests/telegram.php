@@ -3,6 +3,8 @@
 require __DIR__ . '/../app/config/database.php';
 require __DIR__ . '/../app/telegram.php';
 require __DIR__ . '/../app/telegram-api.php';
+require __DIR__ . '/../app/notification-channels.php';
+require __DIR__ . '/../app/notifications.php';
 
 function check(bool $condition, string $message): void
 {
@@ -52,6 +54,8 @@ try {
     check((int) telegram_account($alice)['reminder_hours'] === 24, 'Validasi gagal mengubah preferensi.');
     $messages = [];
     $send = function (int $chat, string $text) use (&$messages): void { $messages[] = [$chat, $text]; };
+    $deliverTelegram = fn (callable $send): int => notification_deliver(['telegram'],
+        fn (array $item, string $text) => $send((int) $item['target'], $text));
     $update = function (int $chat, string $text): array {
         return ['message' => ['chat' => ['type' => 'private', 'id' => $chat], 'from' => ['id' => $chat], 'text' => $text]];
     };
@@ -105,29 +109,62 @@ try {
     $future = $task($courseA, 'Masih jauh', '48 hours');
     $otherClass = $task($courseB, 'Tugas kelas B', '2 hours');
     db_exec("INSERT INTO progres_tugas (id_user, id_tugas, status, selesai_at) VALUES (:user, :task, 'done', CURRENT_TIMESTAMP)", ['user' => $alice, 'task' => $done]);
-    $pending = telegram_pending();
+    $pending = notification_pending(['telegram']);
     check(count($pending) === 2, 'Harus ada dua reminder: Alice dan Carol; Bob memakai 1 jam.');
     check((int) $pending[0]['id_user'] === $alice && (int) $pending[0]['source_id'] === $due, 'Reminder Alice harus hanya tugas aktif kelas A.');
     check((int) $pending[1]['id_user'] === $carol && (int) $pending[1]['source_id'] === $otherClass, 'Carol hanya boleh mendapat tugas kelas B.');
-    $preview = telegram_notification_text($pending[0]);
+    $preview = notification_text($pending[0]);
     check(str_contains($preview, 'Alice') && str_contains($preview, 'WIB') && str_contains($preview, 'https://putu.example.test/'), 'Pesan harus personal, WIB, dan punya tautan PUTU.');
     $expectedDeadline = (new DateTimeImmutable($pending[0]['deadline']))->setTimezone(new DateTimeZone('Asia/Jakarta'))->format('d-m-Y H:i') . ' WIB';
     foreach ([$pending[0]['title'], $pending[0]['course'], $expectedDeadline, 'https://putu.example.test/app/pages/tugas.php'] as $detail) {
         check(str_contains($preview, $detail), 'Reminder harus memuat judul, mata kuliah, deadline lengkap, dan tautan PUTU.');
     }
-    check(telegram_deliver($send) === 2, 'Kirim dua reminder yang memenuhi syarat.');
-    check(telegram_deliver($send) === 0, 'Pemeriksaan berikutnya tidak boleh mengirim duplikat.');
+    check($deliverTelegram($send) === 2, 'Kirim dua reminder yang memenuhi syarat.');
+    check($deliverTelegram($send) === 0, 'Pemeriksaan berikutnya tidak boleh mengirim duplikat.');
+
+    $sender = '6281234567890';
+    $waUrl = notification_whatsapp_url($alice, $sender);
+    parse_str(parse_url($waUrl, PHP_URL_QUERY), $waQuery);
+    check(str_contains(notification_whatsapp_command($sender, '123456@lid', $waQuery['text']), 'terhubung ke PUTU'), 'WhatsApp harus ditautkan dari chat pengirim.');
+    check(str_contains(notification_whatsapp_command($sender, '987654@lid', $waQuery['text']), 'tidak berlaku'), 'Token WhatsApp tidak boleh dipakai ulang.');
+    $webSession = str_repeat('a', 64);
+    $subscription = json_encode(['endpoint' => 'https://fcm.googleapis.com/fcm/send/test',
+        'keys' => ['p256dh' => str_repeat('a', 87), 'auth' => str_repeat('b', 22)]]);
+    notification_web_save($alice, $webSession, $subscription);
+    try {
+        db()->exec('SAVEPOINT duplicate_subscription');
+        notification_web_save($bob, str_repeat('b', 64), $subscription);
+        throw new LogicException('Subscription browser tidak boleh dimiliki dua akun.');
+    } catch (InvalidArgumentException) {
+        db()->exec('ROLLBACK TO SAVEPOINT duplicate_subscription');
+    }
+    notification_disconnect($alice, 'web', str_repeat('z', 64));
+    $pending = notification_pending(['telegram', 'whatsapp', 'web']);
+    check(array_column($pending, 'channel') === ['web', 'whatsapp'], 'Riwayat Telegram tidak boleh menghalangi kanal baru.');
+    check(count(array_filter($pending, fn ($item) => (int) $item['source_id'] === $due && (int) $item['id_user'] === $alice)) === 2,
+        'Kedua kanal baru hanya boleh menerima tugas aktif kelasnya.');
+    $capture = function (array $item, string $text): void {
+        check(str_contains($text, 'Tugas dekat') && str_contains($text, '/app/pages/tugas.php'), 'Isi pesan harus memakai template reminder bersama.');
+    };
+    check(notification_deliver(['telegram', 'web', 'whatsapp'], $capture) === 2, 'Satu kiriman per kanal yang dipilih.');
+    check(notification_pending(['telegram', 'whatsapp', 'web']) === [], 'Semua riwayat kanal harus mencegah kiriman ulang.');
+    notification_whatsapp_command($sender, '123456@lid', 'STOP');
+    notification_disconnect($alice, 'web', $webSession);
+    $account = telegram_account($alice);
+    check($account['wa_chat'] === null && $account['web_subscription'] === null && (int) $account['chat_id'] === 101,
+        'STOP dan logout browser tidak mengubah kanal Telegram.');
+
     telegram_preferences($alice, '168', true, true);
-    $pending = telegram_pending();
+    $pending = notification_pending(['telegram']);
     check(count($pending) === 1 && (int) $pending[0]['source_id'] === $future, 'Perubahan preferensi hanya menambahkan tugas yang belum pernah diingatkan.');
     telegram_preferences($alice, '24', false, true);
     db_exec("UPDATE tugas SET deadline = deadline + INTERVAL '1 minute' WHERE id_tugas = :id", ['id' => $due]);
-    check(telegram_pending() === [], 'Reminder nonaktif harus dilewati meskipun deadline berubah.');
+    check(notification_pending(['telegram']) === [], 'Reminder nonaktif harus dilewati meskipun deadline berubah.');
     telegram_preferences($alice, '24', true, true);
-    check(count(telegram_pending()) === 1, 'Deadline berubah harus menghasilkan satu reminder baru.');
+    check(count(notification_pending(['telegram'])) === 1, 'Deadline berubah harus menghasilkan satu reminder baru.');
     $failedSend = function (): void { throw new RuntimeException('Simulated network failure'); };
-    check(telegram_deliver($failedSend) === 0 && count(telegram_pending()) === 1, 'Pesan gagal harus tetap dapat dicoba ulang.');
-    check(telegram_deliver($send) === 1, 'Retry pesan gagal harus berhasil.');
+    check($deliverTelegram($failedSend) === 0 && count(notification_pending(['telegram'])) === 1, 'Pesan gagal harus tetap dapat dicoba ulang.');
+    check($deliverTelegram($send) === 1, 'Retry pesan gagal harus berhasil.');
 
     // Pengumuman lama tidak dikirim, termasuk yang baru dibuat sebelum user menghubungkan akun.
     db_exec("UPDATE putu_bot.accounts SET connected_at = CURRENT_TIMESTAMP - INTERVAL '1 minute'");
@@ -141,12 +178,12 @@ try {
     $news($classA, '-1 day');
     $newA = $news($classA, '0 seconds');
     $newB = $news($classB, '0 seconds');
-    $pending = telegram_pending();
+    $pending = notification_pending(['telegram']);
     check(count($pending) === 2, 'Hanya pengumuman baru sekelas; Bob mematikan pengumuman.');
     check((int) $pending[0]['source_id'] === $newA && (int) $pending[1]['source_id'] === $newB, 'Pengumuman harus terisolasi per kelas.');
-    $text = telegram_notification_text($pending[0]);
+    $text = notification_text($pending[0]);
     check(preg_match_all('/./su', $text) < 4096 && preg_match('//u', $text) === 1 && str_contains($text, '…'), 'Pesan panjang/emoji harus tetap UTF-8 dan di bawah batas Telegram.');
-    check(telegram_deliver($send) === 2 && telegram_deliver($send) === 0, 'Pengumuman tidak boleh terkirim ulang.');
+    check($deliverTelegram($send) === 2 && $deliverTelegram($send) === 0, 'Pengumuman tidak boleh terkirim ulang.');
 
     $task($courseA, 'Akan dibatalkan setelah fetch', '30 minutes');
     $cancelled = false;
@@ -155,13 +192,13 @@ try {
         telegram_disconnect($bob);
         $cancelled = true;
     };
-    check(telegram_deliver($cancelSend) === 1 && $cancelled, 'Disconnect setelah fetch harus membatalkan kiriman penerima berikutnya.');
+    check($deliverTelegram($cancelSend) === 1 && $cancelled, 'Disconnect setelah fetch harus membatalkan kiriman penerima berikutnya.');
     telegram_handle_update($update(101, '/stop'), $send);
     check(telegram_account($alice)['chat_id'] === null, '/stop harus memutus akun.');
     telegram_handle_update($update(101, '/stop'), $send);
     $carolNewTask = $task($courseB, 'Bot diblokir', '30 minutes');
     $blocked = function (): void { throw new RuntimeException('Blocked', 403); };
-    check(telegram_deliver($blocked) === 0 && telegram_account($carol)['chat_id'] === null, '403 harus memutus bot yang diblokir.');
+    check($deliverTelegram($blocked) === 0 && telegram_account($carol)['chat_id'] === null, '403 harus memutus bot yang diblokir.');
     $pendingToken = $tokenFromUrl(telegram_connect_url($alice));
     telegram_disconnect($alice);
     telegram_handle_update($update(101, '/start ' . $pendingToken), $send);

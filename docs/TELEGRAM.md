@@ -122,6 +122,7 @@ Jalankan pada database lokal **khusus tes**, bukan database PUTU aktif:
 ```bash
 createdb putu_telegram_test
 psql -X -v ON_ERROR_STOP=1 -d putu_telegram_test -f docs/PUTU_PDM.sql -f docs/TELEGRAM.sql
+psql -X -v ON_ERROR_STOP=1 -d putu_telegram_test -f docs/NOTIFICATIONS.sql
 DB_HOST=/var/run/postgresql DB_NAME=putu_telegram_test DB_USER="$USER" php tests/telegram.php
 dropdb putu_telegram_test
 ```
@@ -134,7 +135,4 @@ Tes HTTP terpisah ada di `tests/telegram-http.py`; jalankan server dari checkout
 ini memakai DB khusus tes yang sama dan `TELEGRAM_BOT_TOKEN=123:test`
 `TELEGRAM_BOT_USERNAME=putu_pbl_bot`, lalu jalankan `python3 tests/telegram-http.py URL`.
 
-Fitur percakapan AI, mengubah tugas lewat chat, pengingat jadwal kuliah,
-dan WhatsApp belum termasuk. Untuk asisten berikutnya, identitas Telegram
-sudah terhubung ke user PUTU; akses tugas/kelas/jadwal tetap harus dibatasi
-kelas dan hak user di backend.
+Setup Browser dan WhatsApp ada di [NOTIFICATIONS.md](NOTIFICATIONS.md).
