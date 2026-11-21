@@ -8,44 +8,113 @@ require_guest();
 $error = '';
 $oldEmail = '';
 
+
 if (is_post()) {
     $oldEmail = strtolower(post_str('email'));
-    $password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
+
+    $password = is_string($_POST['password'] ?? null)
+        ? $_POST['password']
+        : '';
 
     if (!csrf_verify()) {
-        $error = 'Sesi form kedaluwarsa. Muat ulang halaman lalu coba lagi.';
-    } elseif ($oldEmail === '' || $password === '' || strlen($oldEmail) > 254 || strlen($password) > 72) {
+        $error = 'Sesi form kedaluwarsa. Muat ulang halaman.';
+
+    } elseif (
+        $oldEmail === '' ||
+        !filter_var($oldEmail, FILTER_VALIDATE_EMAIL) ||
+        strlen($oldEmail) > 254 ||
+        $password === '' ||
+        strlen($password) > 72
+    ) {
         $error = 'Email atau password salah.';
+
     } else {
         try {
-            $user = db_one(
-                'SELECT id_user, password_hash FROM users WHERE email = :email',
-                ['email' => $oldEmail]
+            // 1. Prioritas: Login dengan Supabase Auth.
+            $result = supabase_auth_login(
+                $oldEmail,
+                $password
             );
 
-            // Hash tiruan: waktu respons tetap sama walau email tidak terdaftar,
-            // jadi penyerang tidak bisa menebak email mana yang ada.
-            $hash = $user['password_hash'] ?? '$2y$12$Gcju7U4ksTCdsqiYvEbEs./XcyNGxtZ.9bv8mdamFfCdp1F9VMnsO';
-            $valid = password_verify($password, $hash) && $user !== null;
+            if ($result['success']) {
+                // 2. Buat atau temukan profil lokal.
+                $idUser = supabase_auth_sync_profile(
+                    $result['user']
+                );
 
-            if ($valid) {
-                // Naikkan cost hash lama kalau standar PHP sudah berubah.
-                if (password_needs_rehash($hash, PASSWORD_DEFAULT)) {
-                    db_exec(
-                        'UPDATE users SET password_hash = :hash WHERE id_user = :id',
-                        ['hash' => password_hash($password, PASSWORD_DEFAULT), 'id' => $user['id_user']]
+                // 3. Buat session PHP PUTU.
+                login_user($idUser);
+
+                // 4. Masuk ke gabung kelas/dashboard.
+                redirect(
+                    home_url_for(current_user())
+                );
+            }
+
+            $code = $result['error_code'];
+
+            if ($code === 'email_not_confirmed') {
+                $error = 'Email belum diverifikasi. '
+                    . 'Silakan buka email konfirmasi terlebih dahulu.';
+
+            } elseif ($result['status'] === 429) {
+                $error = 'Terlalu banyak percobaan login. '
+                    . 'Coba lagi nanti.';
+
+            } elseif (
+                $code === 'invalid_credentials'
+                || $code === 'invalid_grant'
+            ) {
+                /*
+                 * Kompatibilitas sementara:
+                 * akun lama yang belum terhubung
+                 * ke Supabase masih dapat login.
+                 */
+                $legacy = db_one(
+                    'SELECT id_user, password_hash
+                     FROM public.users
+                     WHERE LOWER(email) = :email
+                       AND auth_user_id IS NULL',
+                    ['email' => $oldEmail]
+                );
+
+                $hash = $legacy['password_hash']
+                    ?? '$2y$12$Gcju7U4ksTCdsqiYvEbEs./XcyNGxtZ.9bv8mdamFfCdp1F9VMnsO';
+
+                if (
+                    $legacy !== null
+                    && password_verify($password, $hash)
+                ) {
+                    login_user((int) $legacy['id_user']);
+
+                    redirect(
+                        home_url_for(current_user())
                     );
                 }
-                login_user((int) $user['id_user']);
-                redirect(home_url_for(current_user()));
+
+                $error = 'Email atau password salah.';
+
+            } else {
+                $error = 'Login belum berhasil. '
+                    . 'Silakan coba lagi.';
             }
-            $error = 'Email atau password salah.';
+
         } catch (Throwable $e) {
-            error_log('[login] ' . $e->getMessage());
-            $error = 'Terjadi kesalahan di server. Coba lagi nanti.';
+            if ($e->getMessage() === 'EMAIL_ALREADY_IN_USE') {
+                $error = 'Email ini sudah memiliki profil PUTU '
+                    . 'yang belum terhubung ke Supabase. '
+                    . 'Silakan hubungi admin untuk migrasi akun.';
+
+            } else {
+                error_log('[login][supabase] ' . $e->getMessage());
+
+                $error = 'Terjadi kesalahan di server. '
+                    . 'Coba lagi nanti.';
+            }
         }
     }
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
