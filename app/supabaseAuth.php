@@ -206,7 +206,7 @@ function supabase_auth_sync_profile(array $authUser): int
 
     if (
         !preg_match(
-            '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
+            '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
             $authId
         ) ||
         !filter_var($email, FILTER_VALIDATE_EMAIL) ||
