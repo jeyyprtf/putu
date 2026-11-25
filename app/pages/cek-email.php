@@ -164,11 +164,6 @@ if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 Periksa email kamu<span class="text-lime-400">.</span>
             </h1>
 
-            <p class="mt-5 text-sm leading-7 text-stone-400">
-                Jika pendaftaran berhasil, kami telah meminta Supabase
-                mengirimkan email konfirmasi ke alamat yang kamu daftarkan.
-            </p>
-
             <p class="mt-3 text-sm leading-7 text-stone-400">
                 Buka Inbox atau folder Spam, lalu klik tautan
                 verifikasi yang dikirimkan.

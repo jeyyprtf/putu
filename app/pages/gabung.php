@@ -125,13 +125,33 @@ if (is_post()) {
                     Kembali ke beranda
                 </a>
 
-                <a
-                    href="<?= e(url()) ?>"
-                    class="text-2xl font-extrabold tracking-tighter lg:hidden"
-                    aria-label="PUTU - Beranda"
-                >
-                    putu<span class="text-lime-500">.</span>
-                </a>
+                <div class="flex items-center gap-4">
+
+                    <form
+                        action="<?= e(url('logout')) ?>"
+                        method="POST"
+                        data-logout-confirm
+                    >
+                        <?= csrf_field() ?>
+
+                        <button
+                            type="submit"
+                            class="inline-flex min-h-11 items-center gap-2 text-xs font-medium text-red-400 transition hover:text-red-300"
+                        >
+                            <?= icon('logout', 'size-4') ?>
+                            Keluar
+                        </button>
+                    </form>
+
+                    <a
+                        href="<?= e(url()) ?>"
+                        class="text-2xl font-extrabold tracking-tighter lg:hidden"
+                        aria-label="PUTU - Beranda"
+                    >
+                        putu<span class="text-lime-500">.</span>
+                    </a>
+
+                </div>
 
             </div>
 
@@ -392,5 +412,6 @@ if (is_post()) {
 
     </div>
 
+    <?php require __DIR__ . '/../components/logout-confirm.php'; ?>
 </body>
 </html>

@@ -55,7 +55,7 @@ try {
     $messages = [];
     $send = function (int $chat, string $text) use (&$messages): void { $messages[] = [$chat, $text]; };
     $deliverTelegram = fn (callable $send): int => notification_deliver(['telegram'],
-        fn (array $item, string $text) => $send((int) $item['target'], $text));
+        fn (array $item, array $message) => $send((int) $item['target'], notification_telegram_text($message)));
     $update = function (int $chat, string $text): array {
         return ['message' => ['chat' => ['type' => 'private', 'id' => $chat], 'from' => ['id' => $chat], 'text' => $text]];
     };
@@ -83,7 +83,9 @@ try {
     check(telegram_account($alice)['connect_hash'] === null, 'Token harus habis setelah berhasil.');
     telegram_test_notification($alice, $testSend);
     check(count($testMessages) === 1 && $testMessages[0][0] === 101, 'Pesan tes harus dikirim sekali ke Telegram milik user.');
-    check(str_contains($testMessages[0][1], 'Tes notifikasi PUTU') && str_contains($testMessages[0][1], 'WIB'), 'Pesan tes harus jelas dan memiliki waktu WIB.');
+    check(str_contains($testMessages[0][1], '<b>Tes notifikasi PUTU</b>') && str_contains($testMessages[0][1], 'WIB')
+        && str_contains($testMessages[0][1], 'https://putu.example.test/app/pages/pengaturan.php'),
+        'Pesan tes harus memiliki judul tebal, waktu WIB, dan tautan pengaturan.');
 
     $bobToken = $tokenFromUrl(telegram_connect_url($bob));
     telegram_handle_update($update(101, '/start ' . $bobToken), $send);
@@ -115,12 +117,20 @@ try {
     check(count($pending) === 2, 'Harus ada dua reminder: Alice dan Carol; Bob memakai 1 jam.');
     check((int) $pending[0]['id_user'] === $alice && (int) $pending[0]['source_id'] === $due, 'Reminder Alice harus hanya tugas aktif kelas A.');
     check((int) $pending[1]['id_user'] === $carol && (int) $pending[1]['source_id'] === $otherClass, 'Carol hanya boleh mendapat tugas kelas B.');
-    $preview = notification_text($pending[0]);
-    check(str_contains($preview, 'Alice') && str_contains($preview, 'WIB') && str_contains($preview, 'https://putu.example.test/'), 'Pesan harus personal, WIB, dan punya tautan PUTU.');
+    $message = notification_message($pending[0]);
+    $preview = notification_telegram_text($message);
+    check(str_starts_with($preview, '<b>⏰ PUTU · Pengingat tugas</b>') && str_contains($preview, '>Buka tugas di PUTU</a>'),
+        'Pengingat Telegram harus memakai judul tebal dan tautan berlabel.');
     $expectedDeadline = (new DateTimeImmutable($pending[0]['deadline']))->setTimezone(new DateTimeZone('Asia/Jakarta'))->format('d-m-Y H:i') . ' WIB';
     foreach ([$pending[0]['title'], $pending[0]['course'], $expectedDeadline, 'https://putu.example.test/app/pages/tugas.php'] as $detail) {
         check(str_contains($preview, $detail), 'Reminder harus memuat judul, mata kuliah, deadline lengkap, dan tautan PUTU.');
     }
+    putenv('APP_URL=invalid');
+    check(notification_url($message['path']) === 'https://putu.juan.web.id/app/pages/tugas.php', 'Konfigurasi invalid harus memakai domain PUTU.');
+    putenv('APP_URL=http://localhost:8000/');
+    check(str_ends_with(notification_telegram_text($message), "\nhttp://localhost:8000/app/pages/tugas.php"),
+        'Tes localhost memakai alamat lokal sebagai teks.');
+    putenv('APP_URL=https://putu.example.test');
     check($deliverTelegram($send) === 2, 'Kirim dua reminder yang memenuhi syarat.');
     check($deliverTelegram($send) === 0, 'Pemeriksaan berikutnya tidak boleh mengirim duplikat.');
 
@@ -152,8 +162,14 @@ try {
     check(array_column($pending, 'channel') === ['web', 'whatsapp'], 'Riwayat Telegram tidak boleh menghalangi kanal baru.');
     check(count(array_filter($pending, fn ($item) => (int) $item['source_id'] === $due && (int) $item['id_user'] === $alice)) === 2,
         'Kedua kanal baru hanya boleh menerima tugas aktif kelasnya.');
-    $capture = function (array $item, string $text): void {
-        check(str_contains($text, 'Tugas dekat') && str_contains($text, '/app/pages/tugas.php'), 'Isi pesan harus memakai template reminder bersama.');
+    $capture = function (array $item, array $message): void {
+        check($message['path'] === 'app/pages/tugas.php', 'Kedua kanal harus membuka halaman tugas.');
+        if ($item['channel'] === 'web') {
+            check($message['title'] === 'PUTU · Tugas dekat' && str_starts_with($message['body'], 'Deadline ')
+                && !str_contains($message['body'], 'http'), 'Browser memakai judul tugas dan isi singkat tanpa URL.');
+        } else {
+            check(str_starts_with($message['body'], "Tugas dekat\nDeadline "), 'Isi WhatsApp diawali judul dan deadline.');
+        }
     };
     check(notification_deliver(['telegram', 'web', 'whatsapp'], $capture) === 2, 'Satu kiriman per kanal yang dipilih.');
     check(notification_pending(['telegram', 'whatsapp', 'web']) === [], 'Semua riwayat kanal harus mencegah kiriman ulang.');
@@ -190,8 +206,12 @@ try {
     $pending = notification_pending(['telegram']);
     check(count($pending) === 2, 'Hanya pengumuman baru sekelas; Bob mematikan pengumuman.');
     check((int) $pending[0]['source_id'] === $newA && (int) $pending[1]['source_id'] === $newB, 'Pengumuman harus terisolasi per kelas.');
-    $text = notification_text($pending[0]);
+    $text = notification_telegram_text(notification_message($pending[0]));
     check(preg_match_all('/./su', $text) < 4096 && preg_match('//u', $text) === 1 && str_contains($text, '…'), 'Pesan panjang/emoji harus tetap UTF-8 dan di bawah batas Telegram.');
+    check(str_contains($text, 'Kabar &lt;b&gt;kelas&lt;/b&gt;'), 'Judul dari database harus diperlakukan sebagai teks di Telegram.');
+    $webNews = notification_message(array_replace($pending[0], ['channel' => 'web']));
+    check($webNews['body'] === str_repeat('🔥', 100) . '…' && $webNews['path'] === 'app/pages/pengumuman.php',
+        'Browser harus menerima cuplikan pengumuman yang pendek dan utuh.');
     check($deliverTelegram($send) === 2 && $deliverTelegram($send) === 0, 'Pengumuman tidak boleh terkirim ulang.');
 
     $task($courseA, 'Akan dibatalkan setelah fetch', '30 minutes');
@@ -236,7 +256,7 @@ try {
     $retryAt = [];
     $sentTtl = [];
     $attempts = [];
-    $captureSend = function (array $item, string $text, int $ttl) use (&$sentTtl, &$attempts, $near): void {
+    $captureSend = function (array $item, array $message, int $ttl) use (&$sentTtl, &$attempts, $near): void {
         $channel = $item['channel'];
         $attempts[$channel] = ($attempts[$channel] ?? 0) + 1;
         if ($channel === 'whatsapp') {

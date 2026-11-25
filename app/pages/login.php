@@ -163,9 +163,9 @@ if (is_post()) {
                             </div>
                         </div>
                         <div class="text-right">
-                            <button type="button" data-forgot-password class="min-h-11 text-xs text-lime-300 hover:text-lime-200">
+                            <a href="<?= e(url('lupa-password')) ?>" class="inline-flex min-h-11 items-center text-xs text-lime-300 hover:text-lime-200">
                                 Lupa password?
-                            </button>
+                            </a>
                         </div>
                         <button type="submit" class="button w-full">
                             Masuk ke PUTU<?= icon('arrow', 'size-4') ?>

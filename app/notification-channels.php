@@ -137,12 +137,16 @@ function notification_web_expire(int $userId, string $subscription, string $conn
             ['id' => $userId, 'subscription' => $subscription, 'connected' => $connected]);
 }
 
-function notification_send_gateway(string $channel, string $target, string $text, string $path, string $sender = '', int $ttl = 120): void
+function notification_send_gateway(string $channel, string $target, array $message, string $sender = '', int $ttl = 120): void
 {
-    $result = $channel === 'whatsapp'
-        ? notification_gateway(['action' => $channel, 'target' => $target, 'sender' => $sender, 'text' => $text])
-        : notification_gateway(['action' => $channel, 'subscription' => json_decode($target, true),
-            'payload' => ['title' => 'PUTU', 'body' => $text, 'path' => $path], 'ttl' => $ttl]);
+    if ($channel === 'whatsapp') {
+        $text = "*{$message['title']}*\n{$message['body']}\n\n{$message['action']}\n" . notification_url($message['path']);
+        $result = notification_gateway(['action' => $channel, 'target' => $target, 'sender' => $sender, 'text' => $text]);
+    } else {
+        $payload = ['title' => $message['title'], 'body' => $message['body'], 'path' => $message['path']];
+        $result = notification_gateway(['action' => $channel, 'subscription' => json_decode($target, true),
+            'payload' => $payload, 'ttl' => $ttl]);
+    }
     if ($result['code'] !== 200) {
         throw new NotificationGatewayException($result['code'], (int) ($result['retryAfter'] ?? 0));
     }

@@ -72,8 +72,7 @@ function telegram_test_notification(int $idUser, callable $send): void
     if ($account['chat_id'] === null) {
         throw new InvalidArgumentException('Hubungkan akun Telegram terlebih dahulu sebelum mengirim pesan tes.');
     }
-    $time = (new DateTimeImmutable('now', new DateTimeZone('Asia/Jakarta')))->format('d-m-Y H:i:s');
-    $send((int) $account['chat_id'], "🔔 Tes notifikasi PUTU\n\nKalau pesan ini masuk, koneksi notifikasi Telegram kamu sudah berfungsi.\nWaktu tes: {$time} WIB\n\nIni pesan percobaan, bukan pengingat deadline.");
+    $send((int) $account['chat_id'], notification_telegram_text(notification_message(['kind' => 'test', 'channel' => 'telegram'])));
 }
 
 /** Hanya private chat yang boleh menghubungkan akun atau menerima data pribadi. */

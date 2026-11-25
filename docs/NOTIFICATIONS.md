@@ -30,8 +30,13 @@ deadline. Penyedia push dapat memilih durasi yang lebih pendek.
    ```sql
    ALTER TABLE public.tugas ADD COLUMN IF NOT EXISTS aktif BOOLEAN NOT NULL DEFAULT TRUE;
    ```
-2. Pastikan `APP_URL` dapat dibuka penerima pesan. Browser butuh HTTPS untuk
-   deployment. `localhost:8000` cukup untuk uji lokal di perangkat yang sama.
+2. Di server, set `APP_URL=https://putu.juan.web.id` di `app/config/telegram.local.php`
+   atau di environment proses PHP web dan worker. Telegram dan WhatsApp memakai
+   konfigurasi ini, dengan `https://putu.juan.web.id` sebagai nilai default.
+   Jika konfigurasi lama masih menunjuk ke `localhost`, ganti nilainya dan restart
+   worker. Untuk uji lokal di perangkat yang sama, `APP_URL` boleh menunjuk ke
+   `http://127.0.0.1:8000`. Notifikasi browser membuka tautan di origin tempat
+   pengguna mengaktifkannya. Aktifkan dari domain production via HTTPS.
 3. Dari root PUTU, jalankan perintah ini di host yang sama dengan PHP web dan worker.
 
    ```sh

@@ -3,5 +3,5 @@
 return [
     'TELEGRAM_BOT_TOKEN' => '', // token dari BotFather, hanya untuk server
     'TELEGRAM_BOT_USERNAME' => '', // tanpa @
-    'APP_URL' => 'http://localhost:8000', // URL PUTU yang dapat dibuka user
+    'APP_URL' => 'https://putu.juan.web.id', // URL PUTU yang dapat dibuka user
 ];

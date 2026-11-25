@@ -1,6 +1,6 @@
 <?php
 // URL lama tetap didukung. File di app/pages/ juga bisa dibuka langsung.
-$pages = ['', 'home', 'dashboard', 'tugas', 'jadwal', 'pengumuman', 'anggota', 'pengaturan', 'login', 'register', 'gabung', 'not-found'];
+$pages = ['', 'home', 'dashboard', 'tugas', 'jadwal', 'pengumuman', 'anggota', 'pengaturan', 'login', 'register', 'lupa-password', 'reset-password', 'gabung', 'not-found'];
 $page = $_GET['page'] ?? '';
 
 if (!is_string($page) || !in_array($page, $pages, true)) {

@@ -50,26 +50,74 @@ function notification_pending(array $channels, ?array $previous = null): array
     );
 }
 
-function notification_text(array $item): string
+function notification_excerpt(string $text, int $limit): string
 {
-    if ($item['kind'] === 'deadline') {
-        $deadline = (new DateTimeImmutable($item['deadline']))->setTimezone(new DateTimeZone('Asia/Jakarta'));
-        $text = "Hai {$item['nama']}, ada tugas yang mendekati deadline.\n\n{$item['title']}\n{$item['course']}\nDeadline: "
-            . $deadline->format('d-m-Y H:i') . " WIB\n\nTandai selesai di PUTU kalau sudah beres.";
-        $page = 'tugas';
-    } else {
-        // Sisakan ruang agar judul, nama, dan tautan tetap di bawah batas pesan Telegram.
-        $limit = $item['channel'] === 'web' ? 600 : 2500;
-        preg_match('/^.{0,' . $limit . '}/su', $item['body'], $match);
-        $body = $match[0] ?? '';
-        $text = "Kabar kelas PUTU\n\n{$item['title']}\n\n" . $body . ($body !== $item['body'] ? '…' : '');
-        $page = 'pengumuman';
-    }
-    $base = rtrim(telegram_config('APP_URL'), '/');
-    if (filter_var($base, FILTER_VALIDATE_URL) && preg_match('~^https?://~', $base) && strlen($base) <= 500) {
-        $text .= "\n\n" . $base . '/app/pages/' . $page . '.php';
+    $text = trim(preg_replace('/\s+/u', ' ', $text) ?? $text);
+    if (preg_match('/^(.{' . $limit . '})./u', $text, $match)) {
+        return rtrim($match[1]) . '…';
     }
     return $text;
+}
+
+function notification_message(array $item): array
+{
+    $web = $item['channel'] === 'web';
+    $timezone = new DateTimeZone('Asia/Jakarta');
+    if ($item['kind'] === 'test') {
+        $time = (new DateTimeImmutable('now', $timezone))->format('H:i:s');
+        return [
+            'title' => 'Tes notifikasi PUTU',
+            'body' => "Notifikasi aktif · {$time} WIB",
+            'path' => 'app/pages/pengaturan.php',
+            'action' => 'Buka pengaturan',
+        ];
+    }
+
+    $subject = notification_excerpt($item['title'], $web ? 70 : 200);
+    if ($item['kind'] === 'deadline') {
+        $deadline = (new DateTimeImmutable($item['deadline']))->setTimezone($timezone)->format('d-m-Y H:i');
+        $course = notification_excerpt($item['course'], $web ? 60 : 150);
+        $details = "Deadline {$deadline} WIB\n{$course}";
+        return [
+            'title' => $web ? "PUTU · {$subject}" : '⏰ PUTU · Pengingat tugas',
+            'body' => $web ? $details : "{$subject}\n{$details}",
+            'path' => 'app/pages/tugas.php',
+            'action' => 'Buka tugas di PUTU',
+        ];
+    }
+
+    $preview = notification_excerpt($item['body'], $web ? 100 : 320);
+    return [
+        'title' => $web ? "PUTU · {$subject}" : '📢 PUTU · Pengumuman kelas',
+        'body' => $web ? $preview : "{$subject}\n\n{$preview}",
+        'path' => 'app/pages/pengumuman.php',
+        'action' => 'Buka pengumuman di PUTU',
+    ];
+}
+
+function notification_url(string $path): string
+{
+    $base = rtrim(trim(telegram_config('APP_URL')), '/');
+    if (strlen($base) > 500 || !filter_var($base, FILTER_VALIDATE_URL)
+        || !preg_match('~^https?://~i', $base) || strpbrk($base, '?#') !== false
+        || parse_url($base, PHP_URL_USER) !== null) {
+        $base = 'https://putu.juan.web.id';
+    }
+    return $base . '/' . $path;
+}
+
+function notification_telegram_text(array $message): string
+{
+    $title = htmlspecialchars($message['title'], ENT_NOQUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $body = htmlspecialchars($message['body'], ENT_NOQUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $url = notification_url($message['path']);
+    $escapedUrl = htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    // Tampilkan alamat lokal sebagai teks saat tes.
+    $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+    $link = in_array($host, ['localhost', '127.0.0.1', '[::1]'], true)
+        ? "{$message['action']}\n{$escapedUrl}"
+        : "<a href=\"{$escapedUrl}\">{$message['action']}</a>";
+    return "<b>{$title}</b>\n{$body}\n\n{$link}";
 }
 
 /** Periksa ulang akses dan pilihan terbaru sebelum setiap kiriman. */
@@ -90,7 +138,7 @@ function notification_deliver(array $channels, callable $send, array &$retryAt =
                 continue;
             }
             try {
-                $send($current, notification_text($current), $ttl);
+                $send($current, notification_message($current), $ttl);
             } catch (RuntimeException $error) {
                 $code = $error->getCode();
                 error_log('[notifikasi] ' . $channel . ' gagal, kode ' . $code . '.');

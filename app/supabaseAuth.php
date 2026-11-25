@@ -1,4 +1,4 @@
- <?php
+<?php
 /**
  * Integrasi PUTU dengan Supabase Auth.
  *
@@ -11,7 +11,9 @@
  */
 function supabase_auth_request(
     string $endpoint,
-    array $payload
+    array $payload,
+    string $method = 'POST',
+    ?string $accessToken = null
 ): array {
     $baseUrl = rtrim(
         (string) env('SUPABASE_URL', ''),
@@ -45,17 +47,22 @@ function supabase_auth_request(
         );
     }
 
+    $headers = [
+        'apikey: ' . $apiKey,
+        'Content-Type: application/json',
+    ];
+    if ($accessToken !== null) {
+        $headers[] = 'Authorization: Bearer ' . $accessToken;
+    }
+
     curl_setopt_array($curl, [
-        CURLOPT_POST => true,
+        CURLOPT_CUSTOMREQUEST => $method,
         CURLOPT_POSTFIELDS => json_encode(
             $payload,
             JSON_THROW_ON_ERROR
         ),
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER => [
-            'apikey: ' . $apiKey,
-            'Content-Type: application/json',
-        ],
+        CURLOPT_HTTPHEADER => $headers,
         CURLOPT_CONNECTTIMEOUT => 10,
         CURLOPT_TIMEOUT => 20,
     ]);
@@ -83,6 +90,31 @@ function supabase_auth_request(
         'status' => $status,
         'data' => is_array($data) ? $data : [],
     ];
+}
+
+function supabase_auth_send_password_reset(string $email): array
+{
+    $callback = (string) env(
+        'PUTU_PASSWORD_RESET_URL',
+        'https://putu.juan.web.id/app/pages/reset-password.php'
+    );
+
+    return supabase_auth_request('recover?redirect_to=' . rawurlencode($callback), [
+        'email' => $email,
+    ]);
+}
+
+function supabase_auth_verify_password_reset(string $tokenHash): array
+{
+    return supabase_auth_request('verify', [
+        'type' => 'recovery',
+        'token_hash' => $tokenHash,
+    ]);
+}
+
+function supabase_auth_update_password(string $accessToken, string $password): array
+{
+    return supabase_auth_request('user', ['password' => $password], 'PUT', $accessToken);
 }
 
 /**

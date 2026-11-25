@@ -43,14 +43,17 @@ try {
 
 // Batasi laju global dan tiap chat tanpa antrean/dependensi tambahan.
 $lastSent = [];
-$send = function (int $chatId, string $text) use (&$lastSent): void {
+$send = function (int $chatId, string $text, ?string $parseMode = null) use (&$lastSent): void {
     $wait = max(0, ($lastSent[$chatId] ?? 0) + 1.1 - microtime(true));
     if ($wait > 0) {
         usleep((int) ($wait * 1000000));
     }
     try {
-        telegram_api('sendMessage', ['chat_id' => $chatId, 'text' => $text,
-            'link_preview_options' => ['is_disabled' => true]]);
+        $params = ['chat_id' => $chatId, 'text' => $text, 'link_preview_options' => ['is_disabled' => true]];
+        if ($parseMode !== null) {
+            $params['parse_mode'] = $parseMode;
+        }
+        telegram_api('sendMessage', $params);
     } finally {
         $lastSent[$chatId] = microtime(true);
         usleep(50000);
@@ -85,13 +88,12 @@ while (true) {
         $gateway = notification_gateway(['action' => 'status']);
         if (!empty($gateway['publicKey'])) $channels[] = 'web';
         if (!empty($gateway['sender'])) $channels[] = 'whatsapp';
-        notification_deliver($channels, function (array $item, string $text, int $ttl) use ($send): void {
+        notification_deliver($channels, function (array $item, array $message, int $ttl) use ($send): void {
             if ($item['channel'] === 'telegram') {
-                $send((int) $item['target'], $text);
+                $send((int) $item['target'], notification_telegram_text($message), 'HTML');
                 return;
             }
-            $path = $item['kind'] === 'deadline' ? 'app/pages/tugas.php' : 'app/pages/pengumuman.php';
-            notification_send_gateway($item['channel'], $item['target'], $text, $path, $item['wa_sender'] ?? '', $ttl);
+            notification_send_gateway($item['channel'], $item['target'], $message, $item['wa_sender'] ?? '', $ttl);
         }, $retryAt);
         if (!in_array('telegram', $channels, true)) sleep(5);
     } catch (Throwable) {

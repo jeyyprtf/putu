@@ -4,6 +4,7 @@ $title = 'Profil & pengaturan';
 require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../telegram-api.php';
 require_once __DIR__ . '/../notification-channels.php';
+require_once __DIR__ . '/../notifications.php';
 $user = require_login();
 $gateway = notification_gateway(['action' => 'status']);
 $telegram = null;
@@ -50,7 +51,8 @@ try {
             }
             $_SESSION['telegram_test_at'] = time();
             try {
-                notification_send_gateway($channel, $target, 'Tes notifikasi PUTU berhasil diterima.', 'app/pages/pengaturan.php', $telegram['wa_sender'] ?? '');
+                $message = notification_message(['kind' => 'test', 'channel' => $channel]);
+                notification_send_gateway($channel, $target, $message, $telegram['wa_sender'] ?? '');
             } catch (RuntimeException $error) {
                 if ($channel === 'web' && in_array($error->getCode(), [400, 404, 410], true)) {
                     notification_web_expire((int) $user['id_user'], $target, $telegram['web_connected_at']);
@@ -65,7 +67,8 @@ try {
             }
             telegram_test_notification((int) $user['id_user'], function (int $chatId, string $text): void {
                 $_SESSION['telegram_test_at'] = time();
-                telegram_api('sendMessage', ['chat_id' => $chatId, 'text' => $text]);
+                telegram_api('sendMessage', ['chat_id' => $chatId, 'text' => $text, 'parse_mode' => 'HTML',
+                    'link_preview_options' => ['is_disabled' => true]]);
             });
             redirect(url('pengaturan', ['telegram' => 'tested']));
         } else {
