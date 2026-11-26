@@ -18,18 +18,13 @@ function akademik_tabs(): array
     ];
 }
 
-/** Ambil daftar atau satu baris untuk mode edit. Mata kuliah dibatasi per kelas. */
+/** Ambil daftar atau satu baris milik kelas untuk mode edit. */
 function akademik_data(string $tab, int $kelasId, ?int $id = null): array
 {
     $meta = akademik_tabs()[$tab];
     $kolom = implode(', ', array_merge([$meta['id']], $meta['kolom']));
-    $sql = "SELECT $kolom FROM public.{$meta['tabel']} WHERE true";
-    $params = [];
-
-    if ($tab === 'matkul') {
-        $sql .= ' AND id_kelas = :kelas';
-        $params['kelas'] = $kelasId;
-    }
+    $sql = "SELECT $kolom FROM public.{$meta['tabel']} WHERE id_kelas = :kelas";
+    $params = ['kelas' => $kelasId];
     if ($id !== null) {
         $sql .= " AND {$meta['id']} = :id";
         $params['id'] = $id;
@@ -96,9 +91,7 @@ function akademik_simpan(string $tab, string $aksi, int $idUser, int $kelasId, ?
         }
 
         if ($aksi === 'tambah') {
-            if ($tab === 'matkul') {
-                $params['id_kelas'] = $kelasId;
-            }
+            $params['id_kelas'] = $kelasId;
             $kolom = array_keys($params);
             $namaKolom = implode(', ', $kolom);
             $placeholder = ':' . implode(', :', $kolom);
@@ -111,13 +104,9 @@ function akademik_simpan(string $tab, string $aksi, int $idUser, int $kelasId, ?
                 $sql = "DELETE FROM $tabel";
             }
 
-            $sql .= " WHERE {$meta['id']} = :id";
+            $sql .= " WHERE {$meta['id']} = :id AND id_kelas = :kelas";
             $params['id'] = $id;
-
-            if ($tab === 'matkul') {
-                $sql .= ' AND id_kelas = :kelas';
-                $params['kelas'] = $kelasId;
-            }
+            $params['kelas'] = $kelasId;
         }
 
         $stmt = $pdo->prepare($sql);

@@ -61,9 +61,21 @@ $send = function (int $chatId, string $text, ?string $parseMode = null) use (&$l
 };
 
 echo "Worker notifikasi PUTU berjalan.\n";
+try {
+    $heartbeat = notification_private_dir() . '/worker.heartbeat';
+} catch (RuntimeException $error) {
+    $heartbeat = null;
+    fwrite(STDERR, "[notifikasi] Status worker tidak dapat ditulis. Periksa direktori notifikasi.\n");
+}
+$heartbeatAt = 0;
 $retryAt = [];
 while (true) {
     try {
+        if ($heartbeat !== null && time() >= $heartbeatAt) {
+            @touch($heartbeat);
+            $heartbeatAt = time() + 20;
+        }
+        telegram_saved_bot(true);
         $channels = [];
         if (telegram_configured() && time() >= ($retryAt['telegram'] ?? 0)) {
             try {

@@ -41,22 +41,42 @@ deadline. Penyedia push dapat memilih durasi yang lebih pendek.
 
    ```sh
    PUPPETEER_SKIP_DOWNLOAD=true npm --prefix notification-gateway ci
-   node notification-gateway/gateway.cjs --whatsapp
+   node notification-gateway/gateway.cjs
    ```
 
    Gunakan Node 22.12+ dan Chrome terpasang. `PUTU_CHROME` dapat menunjuk ke
    executable Chrome lain. Jalankan PHP dan gateway sebagai user OS yang sama.
    Gateway memakai socket privat dalam `~/.config/putu/notifications` dan
    menyimpan VAPID serta sesi WhatsApp di sana. `PUTU_NOTIFICATION_DIR` dapat
-   mengganti lokasi pada kedua proses. Tetapkan `PUTU_VAPID_SUBJECT` ke kontak
+   mengganti lokasi pada PHP web, worker, dan gateway. Tetapkan `PUTU_VAPID_SUBJECT` ke kontak
    pengelola saat deploy. Simpan direktori agar kunci browser dan sesi WA tetap ada.
-4. Dari localhost, login sebagai admin dan buka **Pengaturan → Developer → Buka debug WhatsApp**.
-   Jika koneksi terputus, pilih **Sambungkan ulang** agar gateway mencoba sesi yang tersimpan.
-   Jika muncul QR, scan dari HP nomor pengirim lewat **Perangkat tertaut → Tautkan perangkat**.
-   Alternatif terminal: `node notification-gateway/gateway.cjs --show-qr`.
-   Khusus host lokal. Jangan teruskan akses panel melalui reverse proxy.
-5. Jalankan `php bin/telegram-worker.php --check`, lalu jalankan
-   `php bin/telegram-worker.php` sebagai proses latar yang tetap hidup. Nama file
+4. Buat kode Developer di terminal privat.
+
+   ```sh
+   php -r '$code = bin2hex(random_bytes(16)); echo "Kode: ", $code, PHP_EOL, "PUTU_DEVELOPER_CODE_HASH=", hash("sha256", $code), PHP_EOL;'
+   ```
+
+   Simpan kode aslinya di pengelola password. Pasang hanya hash di environment PHP
+   atau sebagai key `PUTU_DEVELOPER_CODE_HASH` di `app/config/database.local.php`.
+   Buka `/app/pages/developer.php` lewat HTTPS yang dikenali PHP atau localhost,
+   misalnya lewat SSH port forwarding. Sesi Developer terpisah dan berlaku 30 menit.
+   Mengganti hash mengakhiri sesi aktif.
+   Jika Cloudflare Tunnel meneruskan ke PHP lewat HTTP loopback, isi
+   `PUTU_DEVELOPER_TUNNEL_HOST` dengan hostname publiknya, tanpa skema atau port.
+
+   - **Telegram** — tempel token BotFather, lalu pilih **Verifikasi dan simpan**.
+     Panel mengambil username sendiri dan memeriksa konflik webhook. Token yang
+     tersimpan di direktori notifikasi privat dipakai oleh PHP web dan worker.
+     Penggantian token untuk bot yang sama didukung. Migrasi ke bot berbeda
+     memerlukan penanganan tautan pengguna dan offset worker tersendiri.
+   - **WhatsApp** — pilih **Hubungkan WhatsApp** lalu scan QR di HP pengirim melalui
+     **Perangkat tertaut → Tautkan perangkat**. Nomor muncul setelah pairing.
+     Untuk ganti perangkat pengirim, lepas sesi PUTU dari HP lama lebih dulu.
+   - **Web Push** — pilih **Tes notifikasi browser** di browser target.
+     Untuk notifikasi tugas dan pengumuman, sambungkan browser dari Pengaturan akun.
+5. Jalankan `php bin/telegram-worker.php` sebagai proses latar yang tetap hidup.
+   `php bin/telegram-worker.php --check` memeriksa database, bot Telegram, dan gateway
+   setelah bot dikonfigurasi. Nama file
    worker dipertahankan untuk setup Telegram lama. Setelah memperbarui kode,
    restart worker dan gateway agar keduanya memakai versi terbaru.
 6. Login sebagai user, buka Pengaturan PUTU, hubungkan kanal pilihan dan jalankan

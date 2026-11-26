@@ -3,10 +3,12 @@
 Struktur frontend diperbarui pada 26 Oktober 2026. Implementasi memakai PHP native, Tailwind Browser v4 yang sudah dipakai project, dan JavaScript biasa. Jalankan dari root repositori:
 
 ```bash
-php -S 127.0.0.1:8000 -t .
+php -S 127.0.0.1:8000 -t public public/index.php
 ```
 
-Buka `http://127.0.0.1:8000/`. Tiap halaman dapat dibuka langsung, misalnya `http://127.0.0.1:8000/app/pages/dashboard.php`. URL lama `index.php?page=dashboard` juga tetap bekerja. Halaman tidak dikenal melalui index menghasilkan 404; nama file dibatasi dengan daftar halaman tetap.
+Buka `http://127.0.0.1:8000/`. URL halaman seperti `/app/pages/dashboard.php` dan `/index.php?page=dashboard` tetap bekerja. `public/index.php` memeriksa daftar halaman dan aset yang boleh diakses, termasuk URL service worker di `/notification-sw.js`. Rute lain menghasilkan 404.
+
+Untuk deployment, arahkan request ke `public/index.php` dengan path, query string, dan metode HTTP asli. Gunakan `public/` sebagai document root dan pilih `public/index.php` sebagai satu-satunya file PHP yang dieksekusi server web. Uji rute publik dengan `python3 tests/public-router.py http://127.0.0.1:8000`.
 
 ## File yang diedit tim
 

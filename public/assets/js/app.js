@@ -447,3 +447,35 @@ update();
                     apply();
                 });
             })();
+
+(() => {
+            const dialog = document.getElementById('dialog-keluar-kelas');
+            const buka = document.getElementById('buka-keluar-kelas');
+            const batal = document.getElementById('batal-keluar-kelas');
+
+            if (!dialog || !buka || !batal) return;
+
+            buka.addEventListener('click', () => {
+                dialog.showModal();
+            });
+
+            batal.addEventListener('click', () => {
+                dialog.close();
+            });
+        })();
+
+const tombolSalinKode = document.getElementById('copy-kode-gabung');
+    const statusSalinKode = document.getElementById('copy-kode-status');
+
+    tombolSalinKode?.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(tombolSalinKode.dataset.kode);
+            statusSalinKode.textContent = 'Tersalin!';
+
+            setTimeout(() => {
+                statusSalinKode.textContent = '';
+            }, 3000);
+        } catch (error) {
+            statusSalinKode.textContent = 'Gagal menyalin. Salin kode secara manual.';
+        }
+    });

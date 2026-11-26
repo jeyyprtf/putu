@@ -48,7 +48,7 @@ if (is_post()) {
             );
 
             if ($result['success']) {
-                // Jangan membuat session PHP sebelum email diverifikasi.
+                $_SESSION['email_verifikasi_pendaftaran'] = $old['email'];
                 redirect(url('cek-email'));
             } elseif ($result['status'] === 429) {
                 $error = 'Terlalu banyak permintaan. Coba lagi nanti.';

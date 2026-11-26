@@ -20,6 +20,10 @@ if (!window.isSecureContext || !('serviceWorker' in navigator) || !('PushManager
             let subscription = await registration.pushManager.getSubscription();
             const oldKey = new Uint8Array(subscription?.options.applicationServerKey ?? []);
             if (subscription && (oldKey.length !== key.length || oldKey.some((value, index) => value !== key[index]))) {
+                if (pushForm.dataset.test === '1') {
+                    pushStatus.textContent = 'Browser memakai kunci lama. Hubungkan ulang dari Pengaturan PUTU.';
+                    return;
+                }
                 await subscription.unsubscribe();
                 subscription = null;
             }

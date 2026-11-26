@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const { spawn } = require('node:child_process');
 const { once } = require('node:events');
-const { mkdtempSync, rmSync } = require('node:fs');
+const { existsSync, mkdtempSync, rmSync } = require('node:fs');
 const { createConnection } = require('node:net');
 const { tmpdir } = require('node:os');
 const { join } = require('node:path');
@@ -41,15 +41,19 @@ test('WA can reconnect after disconnect, and its QR and status stay scoped to de
                 error.stack += '\\n    at /test/whatsapp-web.js/src/Client.js:558:36';
                 Promise.reject(error);
                 setImmediate(() => process.send('navigation-handled'));
+            } else if (action === 'native-qr') {
+                client.pupPage = { evaluate: async () => 'data:image/png;base64,ZmFrZQ==' };
+                client.emit('authenticated');
+                process.send('native-qr-ready');
             } else client.emit('disconnected');
         });
         require(${JSON.stringify(join(__dirname, 'gateway.cjs'))});
-    `, '--', '--whatsapp'], {
+    `], {
         env: { ...process.env, PUTU_NOTIFICATION_DIR: directory },
         stdio: ['ignore', 'ignore', 'inherit', 'ipc'],
     });
     const request = action => new Promise((resolve, reject) => {
-        const socket = createConnection(join(directory, 'gateway.sock'), () => socket.end(JSON.stringify({ action }) + '\n'));
+        const socket = createConnection(join(directory, 'gateway.sock'), () => socket.write(JSON.stringify({ action }) + '\n'));
         socket.setEncoding('utf8');
         let body = '';
         socket.on('data', part => { body += part; });
@@ -67,13 +71,22 @@ test('WA can reconnect after disconnect, and its QR and status stay scoped to de
         assert.fail('Gateway did not reach ' + state);
     }
     try {
+        assert.equal((await until('disabled')).reconnect, true);
+        assert.equal((await request('wa_reconnect')).code, 202);
+        assert.ok(existsSync(join(directory, 'whatsapp.enabled')));
         assert.equal((await until('ready')).reconnect, false);
+        assert.equal((await request('wa_debug')).sender, '628000000000');
         assert.equal((await request('wa_reconnect')).code, 409);
         const navigation = once(child, 'message');
         child.send('navigate');
         assert.equal((await navigation)[0], 'navigation-handled');
         assert.equal((await request('wa_debug')).state, 'ready');
         const key = (await request('status')).publicKey;
+        const nativeQr = once(child, 'message');
+        child.send('native-qr');
+        assert.equal((await nativeQr)[0], 'native-qr-ready');
+        assert.match((await until('pairing')).image, /^data:image\/png;base64,/);
+        assert.equal((await request('status')).image, undefined);
         child.send('disconnect');
         assert.equal((await until('offline')).reconnect, true);
         const results = await Promise.all([request('wa_reconnect'), request('wa_reconnect')]);

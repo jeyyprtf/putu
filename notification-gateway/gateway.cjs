@@ -1,6 +1,6 @@
 const { execFile } = require('node:child_process');
 const { ECDH } = require('node:crypto');
-const { chmodSync, lstatSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } = require('node:fs');
+const { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } = require('node:fs');
 const { createConnection, createServer } = require('node:net');
 const { homedir } = require('node:os');
 const { join } = require('node:path');
@@ -69,8 +69,10 @@ let qrCode;
 let waState = 'disabled';
 let waStartedAt = 0;
 let reconnecting = false;
+const whatsappFlag = join(stateDir, 'whatsapp.enabled');
+let whatsappEnabled = process.argv.includes('--whatsapp') || existsSync(whatsappFlag);
 function startWhatsApp() {
-    if (!process.argv.includes('--whatsapp')) return;
+    if (!whatsappEnabled) return;
     const { Client, LocalAuth } = require('whatsapp-web.js');
     sender = '';
     qrCode = undefined;
@@ -78,6 +80,7 @@ function startWhatsApp() {
     waStartedAt = Date.now();
     const client = new Client({
         authStrategy: new LocalAuth({ dataPath: join(stateDir, 'whatsapp') }),
+        authTimeoutMs: 180000,
         userAgent: false,
         webVersionCache: { type: 'none' },
         puppeteer: { headless: true, executablePath: process.env.PUTU_CHROME || '/usr/bin/google-chrome', handleSIGTERM: false },
@@ -126,7 +129,7 @@ function startWhatsApp() {
         }
     });
     client.initialize().catch(async error => {
-        const reason = String(error?.message).match(/^(?:net::ERR_[A-Z_]+|Navigation timeout|Failed to launch the browser process|Profile in use|Cannot read properties of undefined)/)?.[0] || error?.name || 'startup';
+        const reason = String(error?.message ?? error).match(/^(?:auth timeout|Waiting failed|net::ERR_[A-Z_]+|Navigation timeout|Failed to launch the browser process|Profile in use|Cannot read properties of undefined)/)?.[0] || error?.name || 'startup';
         console.error(`WhatsApp belum siap (${reason}). Web Push tetap berjalan.`);
         await client.destroy().catch(() => {});
         markOffline();
@@ -134,7 +137,8 @@ function startWhatsApp() {
 }
 
 function canReconnect() {
-    return !reconnecting && (waState === 'offline' || (waState === 'starting' && Date.now() - waStartedAt > 60000));
+    return !reconnecting && (waState === 'disabled' || waState === 'offline'
+        || (waState === 'starting' && Date.now() - waStartedAt > 60000));
 }
 
 async function reconnectWhatsApp() {
@@ -145,6 +149,10 @@ async function reconnectWhatsApp() {
     qrCode = undefined;
     try {
         if (whatsapp?.pupBrowser?.connected) await whatsapp.destroy();
+        if (!whatsappEnabled) {
+            writeFileSync(whatsappFlag, '', { flag: 'a', mode: 0o600 });
+            whatsappEnabled = true;
+        }
         startWhatsApp();
         return { code: 202 };
     } catch {
@@ -166,6 +174,21 @@ function whatsappQrImage(value) {
     const path = qr.modules.map((row, y) => row.map((dark, x) => dark ? `M${x + 4} ${y + 4.5}h1` : '').join('')).join('');
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges"><path fill="white" d="M0 0h${size}v${size}H0z"/><path stroke="black" d="${path}"/></svg>`;
     return 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64');
+}
+
+async function whatsappStatus() {
+    let image = qrCode ? whatsappQrImage(qrCode) : null;
+    const client = whatsapp;
+    if (!image && waState === 'starting' && client?.pupPage) {
+        // The native pairing screen can show a QR before the library emits its event.
+        const nativeQr = await client.pupPage.evaluate(() =>
+            document.querySelector('[data-ref] canvas')?.toDataURL('image/png') ?? null
+        ).catch(() => null);
+        if (client === whatsapp && waState === 'starting' && nativeQr?.startsWith('data:image/png;base64,')) {
+            image = nativeQr;
+        }
+    }
+    return { code: 200, state: image ? 'pairing' : waState, sender, reconnect: !image && canReconnect(), image };
 }
 
 function validSubscription(subscription) {
@@ -199,7 +222,7 @@ function validSubscription(subscription) {
 async function handle(input) {
     if (input.action === 'status') return { code: 200, publicKey: keys.publicKey, sender };
     if (input.action === 'qr') return { code: 200, qr: qrCode, sender };
-    if (input.action === 'wa_debug') return { code: 200, state: waState, reconnect: canReconnect(), image: qrCode ? whatsappQrImage(qrCode) : null };
+    if (input.action === 'wa_debug') return whatsappStatus();
     if (input.action === 'wa_reconnect') return reconnectWhatsApp();
     if (input.action === 'whatsapp' && chatId.test(input.target) && typeof input.text === 'string') {
         if (!sender) return { code: 503 };

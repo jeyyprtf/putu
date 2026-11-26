@@ -93,21 +93,6 @@ _, html, _ = request(browser, settings, {'_csrf': csrf(html), 'aksi': 'telegram_
 assert 'Koneksi notifikasi diputus.' in html
 assert request(anonymous, '/bin/telegram-worker.php')[0] == 404
 
-developer = '/app/pages/developer.php'
-assert 'Buka debug WhatsApp' in html
-assert 'Masuk' in request(anonymous, developer)[1]
-status, page, headers = request(browser, developer)
-assert status == 200 and 'Sambungkan ulang' in page
-assert headers['Cache-Control'] == 'no-store'
-assert "frame-ancestors 'none'" in headers['Content-Security-Policy']
-assert request(browser, developer + '?status=1', headers={'X-Forwarded-For': '192.0.2.1'})[0] == 403
-assert request(browser, developer + '?status=1', headers={'Host': 'putu.example.test'})[0] == 403
-assert request(browser, developer, {'aksi': 'wa_reconnect'})[0] == 403
-member = client()
-_, form, _ = request(member, '/app/pages/register.php')
-request(member, '/app/pages/register.php', {'_csrf': csrf(form), 'nama': 'Member User',
-    'email': 'member-' + email, 'password': 'Test-local-only-1729'})
-assert request(member, developer + '?status=1')[0] == 403
-assert request(member, developer, {'aksi': 'wa_reconnect', '_csrf': csrf(form)})[0] == 403
-print('PASS: notification settings, CSRF, access restrictions for Developer QR/reconnect, and CLI guard; no provider messages sent.')
+assert 'Buka debug WhatsApp' not in html
+print('PASS: notification settings, CSRF and CLI guard; no provider messages sent.')
 print('Test login for local visual QA: ' + email)

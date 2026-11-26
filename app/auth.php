@@ -18,7 +18,7 @@ const SESSION_NAME = 'putu_session';
  * Buka session dengan cookie yang aman. Aman dipanggil berulang kali.
  * Harus dipanggil SEBELUM ada output HTML (cookie dikirim lewat header).
  */
-function session_boot(): void
+function session_boot(string $name = SESSION_NAME, ?bool $secure = null): void
 {
     if (session_status() !== PHP_SESSION_NONE) {
         return;
@@ -26,11 +26,11 @@ function session_boot(): void
 
     // Tolak session ID buatan penyerang yang belum pernah dibuat server.
     ini_set('session.use_strict_mode', '1');
-    session_name(SESSION_NAME);
+    session_name($name);
     session_set_cookie_params([
         'lifetime' => 0, // hilang saat browser ditutup
         'path'     => '/',
-        'secure'   => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+        'secure'   => $secure ?? (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
         'httponly' => true,
         'samesite' => 'Lax',
     ]);

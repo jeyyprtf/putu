@@ -1,4 +1,3 @@
-
 <?php
 /**
  * Halaman instruksi dan kirim ulang verifikasi email.
@@ -14,12 +13,12 @@ $title = 'Periksa Email';
 
 require_once __DIR__ . '/../bootstrap.php';
 
-// Session hanya digunakan untuk CSRF dan cooldown.
 session_boot();
 
 $error = '';
 $success = '';
-$email = '';
+$emailPendaftaran = $_SESSION['email_verifikasi_pendaftaran'] ?? '';
+$email = $emailPendaftaran;
 $cooldown = 60;
 
 // Simpan waktu permintaan terakhir per email.
@@ -33,9 +32,7 @@ if (!is_array($_SESSION['email_resend_at'])) {
 // Proses kirim ulang email verifikasi.
 // --------------------------------------------------
 if (is_post()) {
-    $email = strtolower(trim(
-        (string) ($_POST['email'] ?? '')
-    ));
+    $email = strtolower(post_str('email'));
 
     if (!csrf_verify()) {
         $error = 'Sesi keamanan tidak valid. '
@@ -127,7 +124,10 @@ if (is_post()) {
 // Waktu cooldown yang tersisa untuk email di form.
 $remaining = 0;
 
-if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+$emailValid = strlen($email) <= 254 && filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+$tampilkanGmail = $emailValid && str_ends_with(strtolower($email), '@gmail.com');
+
+if ($emailValid) {
     $key = hash('sha256', $email);
 
     $lastSent = (int) (
@@ -145,151 +145,131 @@ if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
 <html lang="id">
 <head>
     <?php require __DIR__ . '/../components/head.php'; ?>
+    <style>
+        #email:is(:autofill, :-webkit-autofill) {
+            box-shadow: inset 0 0 0 100px var(--color-stone-900, #1c1917);
+            -webkit-text-fill-color: var(--color-stone-100, #f5f5f4);
+        }
+    </style>
 </head>
 
-<body class="min-h-dvh bg-stone-950 font-sans text-stone-100 antialiased">
+<body class="flex min-h-dvh flex-col bg-stone-950 font-sans text-stone-100 antialiased">
+    <?php $mailIcon = '<svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>'; ?>
+    <main class="flex flex-1 items-center justify-center px-5 py-6 sm:px-6">
+        <div class="w-full max-w-md">
+            <a
+                href="<?= e(url('login')) ?>"
+                class="mb-6 inline-flex min-h-11 items-center gap-2 text-sm text-stone-400 transition hover:text-stone-100"
+            >
+                <?= icon('back', 'size-5') ?>
+                Kembali ke masuk
+            </a>
 
-    <main class="flex min-h-dvh items-center justify-center px-6 py-12">
-
-        <div class="w-full max-w-md text-center">
-
-            <!-- Header -->
-            <div class="mb-6 text-5xl">✉️</div>
-
-            <p class="mb-3 text-xs font-semibold uppercase tracking-widest text-lime-400">
-                PUTU / Verifikasi Email
+            <p class="text-xs font-bold uppercase tracking-[.18em] text-lime-400">
+                PUTU / Academic Workspace
             </p>
 
-            <h1 class="text-3xl font-semibold tracking-tight">
-                Periksa email kamu<span class="text-lime-400">.</span>
+            <h1 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+                Cek email kamu.
             </h1>
 
-            <p class="mt-3 text-sm leading-7 text-stone-400">
-                Buka Inbox atau folder Spam, lalu klik tautan
-                verifikasi yang dikirimkan.
-            </p>
-
-            <!-- Form resend -->
-            <section class="mt-8 rounded-2xl border border-stone-800 bg-stone-900/70 p-5 text-left sm:p-6">
-
-                <h2 class="text-base font-semibold text-stone-100">
-                    Belum menerima email?
-                </h2>
-
-                <p class="mt-2 text-xs leading-6 text-stone-400">
-                    Masukkan kembali alamat email yang digunakan
-                    saat mendaftar untuk meminta link verifikasi baru.
+            <?php if ($emailValid): ?>
+                <p class="mt-4 text-sm leading-6 text-stone-400 sm:text-base">
+                    Periksa kotak masuk email berikut untuk menemukan tautan verifikasi akun PUTU:
                 </p>
 
-                <!-- Notifikasi berhasil -->
-                <?php if ($success !== ''): ?>
-                    <div
-                        role="status"
-                        class="mt-5 rounded-xl border border-lime-500/30 bg-lime-500/10 p-4 text-sm leading-6 text-lime-300"
-                    >
-                        <?= e($success) ?>
-                    </div>
-                <?php endif; ?>
+                <p class="mt-3 break-all text-base font-semibold text-stone-100">
+                    <?= e($email) ?>
+                </p>
+            <?php else: ?>
+                <p class="mt-4 text-sm leading-6 text-stone-400 sm:text-base">
+                    Alamat email belum tersedia. Kembali ke halaman masuk untuk meminta ulang email verifikasi.
+                </p>
+            <?php endif; ?>
 
-                <!-- Notifikasi error -->
-                <?php if ($error !== ''): ?>
-                    <div
-                        role="alert"
-                        class="mt-5 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm leading-6 text-red-300"
-                    >
-                        <?= e($error) ?>
-                    </div>
-                <?php endif; ?>
+            <form method="POST" action="<?= e(url('cek-email')) ?>" id="resend-form" class="mt-6">
+                <?= csrf_field() ?>
 
-                <form
-                    method="POST"
-                    action="<?= e(url('cek-email')) ?>"
-                    class="mt-5 space-y-4"
-                    id="resend-form"
-                >
-                    <?= csrf_field() ?>
+                <input type="hidden" id="email" name="email" value="<?= e($email) ?>">
 
-                    <div>
-                        <label
-                            for="email"
-                            class="mb-2 block text-xs font-semibold text-stone-200"
+                <div class="grid gap-3">
+                    <div id="gmail-shortcut"<?= $tampilkanGmail ? '' : ' hidden' ?>>
+                        <a
+                            href="https://mail.google.com/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="flex min-h-12 items-center justify-center gap-3 rounded-full bg-[#84cc00] px-5 text-sm font-semibold text-stone-950 transition hover:bg-lime-400 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-lime-400 sm:min-h-14 sm:text-base"
                         >
-                            Alamat email
-                        </label>
-
-                        <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            required
-                            maxlength="254"
-                            autocomplete="email"
-                            placeholder="nama@email.com"
-                            value="<?= e($email) ?>"
-                            class="w-full min-h-12 rounded-xl border border-stone-700 bg-stone-950 px-4 py-3 text-sm text-stone-100 outline-none transition focus:border-lime-400"
-                        >
+                            <?= icon('gmail', 'size-5 shrink-0') ?>
+                            Buka Gmail
+                        </a>
                     </div>
 
                     <button
                         type="submit"
                         id="resend-button"
                         data-remaining="<?= (int) $remaining ?>"
-                        class="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-lime-500 px-5 py-3 text-sm font-semibold text-stone-950 transition hover:bg-lime-400 disabled:cursor-not-allowed disabled:opacity-50"
+                        data-email-valid="<?= $emailValid ? '1' : '0' ?>"
+                        class="min-h-12 rounded-full border border-stone-800 px-5 text-sm font-semibold transition hover:border-stone-600 hover:bg-stone-900 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-lime-400 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-14 sm:text-base"
+                        <?= !$emailValid ? 'disabled' : '' ?>
                     >
                         Kirim ulang email verifikasi
                     </button>
+                </div>
 
-                    <p
-                        id="cooldown-message"
-                        class="text-center text-xs leading-5 text-stone-500"
-                        aria-live="polite"
-                    >
-                        Kamu dapat meminta email ulang dengan jeda minimal 60 detik.
+                <p id="cooldown-message" class="sr-only" aria-live="polite">
+                    Kamu dapat meminta email ulang dengan jeda minimal 60 detik.
+                </p>
+
+                <?php if ($success !== ''): ?>
+                    <p role="status" class="mt-4 rounded-xl border border-lime-500/30 bg-lime-500/10 px-4 py-3 text-sm leading-6 text-lime-300">
+                        <?= e($success) ?>
                     </p>
+                <?php endif; ?>
 
-                </form>
+                <?php if ($error !== ''): ?>
+                    <p role="alert" class="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm leading-6 text-red-300">
+                        <?= e($error) ?>
+                    </p>
+                <?php endif; ?>
+            </form>
 
-            </section>
-
-            <!-- Kembali login -->
-            <a
-                href="<?= e(url('login')) ?>"
-                class="mt-7 inline-flex min-h-11 items-center justify-center rounded-xl border border-stone-700 px-6 text-sm font-semibold text-stone-200 transition hover:border-stone-500 hover:bg-stone-900"
-            >
-                Kembali ke Login
-            </a>
-
-            <p class="mt-6 text-xs leading-6 text-stone-500">
-                Pastikan alamat email benar sebelum meminta verifikasi ulang.
+            <p class="mt-6 flex items-start gap-3 text-sm leading-6 text-stone-400">
+                <?= icon('info', 'mt-0.5 size-5 shrink-0 text-stone-300') ?>
+                <span>
+                    Belum menemukan emailnya? Periksa juga folder <strong class="font-semibold text-stone-300">Spam</strong> di kotak masukmu.
+                </span>
             </p>
-
         </div>
-
     </main>
+    <footer class="px-5 pb-3 text-center text-xs leading-5 text-stone-400 [@media(min-height:900px)]:pb-7">
+        © <?= date('Y') ?> PUTU. Make room for what matters.
+    </footer>
 
     <script>
     (() => {
         const form = document.getElementById('resend-form');
         const button = document.getElementById('resend-button');
         const message = document.getElementById('cooldown-message');
-        const emailInput = document.getElementById('email');
+        const emailValid = button.dataset.emailValid === '1';
 
         let remaining = Number(button.dataset.remaining || 0);
 
         function updateButton() {
+            if (!emailValid) {
+                button.disabled = true;
+                button.textContent = 'Kirim ulang email verifikasi';
+                return;
+            }
+
             if (remaining > 0) {
                 button.disabled = true;
                 button.textContent = `Kirim ulang dalam ${remaining} detik`;
-
-                message.textContent =
-                    'Silakan tunggu sebelum meminta email ulang.';
-
+                message.textContent = 'Silakan tunggu sebelum meminta email ulang.';
             } else {
                 button.disabled = false;
                 button.textContent = 'Kirim ulang email verifikasi';
-
-                message.textContent =
-                    'Kamu dapat meminta email ulang dengan jeda minimal 60 detik.';
+                message.textContent = 'Kamu dapat meminta email ulang dengan jeda minimal 60 detik.';
             }
         }
 
@@ -306,17 +286,9 @@ if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
             }, 1000);
         }
 
-        // Email diubah: server tetap memvalidasi cooldown
-        // berdasarkan alamat email yang dikirim.
-        emailInput.addEventListener('input', () => {
-            if (remaining > 0) {
-                remaining = 0;
-                updateButton();
-            }
-        });
-
-        form.addEventListener('submit', () => {
-            if (!form.checkValidity()) {
+        form.addEventListener('submit', (event) => {
+            if (!emailValid || remaining > 0) {
+                event.preventDefault();
                 return;
             }
 

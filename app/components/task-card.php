@@ -1,7 +1,7 @@
 <?php $deadlineLabel = deadline_label($task); ?>
 <article class="panel p-4 sm:p-6" data-task-card data-task-id="<?= e($task['id']) ?>" data-course="<?= e($task['course']) ?>" data-deadline="<?= e($task['deadline']) ?>" data-status="<?= e($task['status']) ?>">
     <div class="flex items-start justify-between gap-3">
-        <p class="min-w-0 text-xs leading-5 text-stone-400">
+        <p class="min-w-0 text-xs leading-5 text-stone-400 [overflow-wrap:anywhere]">
             <span class="font-medium text-stone-200"><?= e($task['course']) ?></span>
             <span aria-hidden="true"> · </span><?= e($task['type']) ?>
         </p>
@@ -9,12 +9,12 @@
     </div>
     <details class="mt-2" <?= (string) ($_GET['task'] ?? '') === (string) $task['id'] ? 'open' : '' ?>>
         <summary class="flex min-h-11 items-start justify-between gap-4">
-            <h2 class="text-lg font-semibold leading-7 tracking-tight">
+            <h2 class="min-w-0 text-lg font-semibold leading-7 tracking-tight [overflow-wrap:anywhere]">
                 <?= e($task['title']) ?>
             </h2>
             <span class="details-arrow mt-1 shrink-0 text-stone-400 transition-transform"><?= icon('chevron', 'size-4') ?></span>
         </summary>
-        <p class="mt-2 text-sm leading-6 text-stone-400">
+        <p class="mt-2 text-sm leading-6 text-stone-400 [overflow-wrap:anywhere]">
             <?= e($task['description']) ?>
         </p>
         <p class="mt-2 text-xs leading-5 text-stone-400">

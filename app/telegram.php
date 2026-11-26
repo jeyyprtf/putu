@@ -1,8 +1,30 @@
 <?php
 /** Telegram: koneksi akun, preferensi, dan pemilihan notifikasi dari data PUTU. */
 
+require_once __DIR__ . '/notification-storage.php';
+
+function telegram_saved_bot(bool $reload = false): array
+{
+    static $saved = null;
+    if ($saved === null || $reload) {
+        $file = notification_state_dir() . '/telegram-bot.json';
+        $raw = @file_get_contents($file);
+        $data = $raw === false ? null : json_decode($raw, true);
+        $saved = is_array($data)
+            && is_string($data['TELEGRAM_BOT_TOKEN'] ?? null)
+            && is_string($data['TELEGRAM_BOT_USERNAME'] ?? null) ? $data : [];
+    }
+    return $saved;
+}
+
 function telegram_config(string $key): string
 {
+    if ($key === 'TELEGRAM_BOT_TOKEN' || $key === 'TELEGRAM_BOT_USERNAME') {
+        $stored = telegram_saved_bot()[$key] ?? null;
+        if (is_string($stored) && $stored !== '') {
+            return $stored;
+        }
+    }
     static $local = null;
     if ($local === null) {
         $file = __DIR__ . '/config/telegram.local.php';

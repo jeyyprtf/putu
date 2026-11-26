@@ -8,10 +8,10 @@ function jadwal_daftar(int $kelasId): array
                 to_char(j.jam_selesai, 'HH24:MI') AS jam_selesai,
                 m.nama_matkul, d.nama_dosen, r.nama_ruangan, r.gedung
          FROM jadwal_kuliah AS j
-         JOIN mata_kuliah AS m ON m.id_matkul = j.id_matkul
-         JOIN dosen AS d ON d.id_dosen = j.id_dosen
-         JOIN ruangan AS r ON r.id_ruangan = j.id_ruangan
-         WHERE m.id_kelas = :kelas
+         JOIN mata_kuliah AS m ON m.id_matkul = j.id_matkul AND m.id_kelas = j.id_kelas
+         JOIN dosen AS d ON d.id_dosen = j.id_dosen AND d.id_kelas = j.id_kelas
+         JOIN ruangan AS r ON r.id_ruangan = j.id_ruangan AND r.id_kelas = j.id_kelas
+         WHERE j.id_kelas = :kelas
          ORDER BY j.hari, j.jam_mulai, j.id_jadwal",
         ['kelas' => $kelasId]
     );
@@ -47,8 +47,8 @@ function jadwal_opsi(int $kelasId): array
 {
     return [
         'matkul' => db_all('SELECT id_matkul, nama_matkul FROM mata_kuliah WHERE id_kelas = :kelas ORDER BY nama_matkul', ['kelas' => $kelasId]),
-        'dosen' => db_all('SELECT id_dosen, nama_dosen FROM dosen ORDER BY nama_dosen'),
-        'ruangan' => db_all('SELECT id_ruangan, gedung, nama_ruangan FROM ruangan ORDER BY gedung, nama_ruangan'),
+        'dosen' => db_all('SELECT id_dosen, nama_dosen FROM dosen WHERE id_kelas = :kelas ORDER BY nama_dosen', ['kelas' => $kelasId]),
+        'ruangan' => db_all('SELECT id_ruangan, gedung, nama_ruangan FROM ruangan WHERE id_kelas = :kelas ORDER BY gedung, nama_ruangan', ['kelas' => $kelasId]),
     ];
 }
 
@@ -60,8 +60,7 @@ function jadwal_ambil(int $kelasId, int $id): ?array
                 to_char(j.jam_mulai, 'HH24:MI') AS jam_mulai,
                 to_char(j.jam_selesai, 'HH24:MI') AS jam_selesai
          FROM jadwal_kuliah AS j
-         JOIN mata_kuliah AS m ON m.id_matkul = j.id_matkul
-         WHERE m.id_kelas = :kelas AND j.id_jadwal = :id",
+         WHERE j.id_kelas = :kelas AND j.id_jadwal = :id",
         ['kelas' => $kelasId, 'id' => $id]
     );
     return $baris[0] ?? null;
@@ -104,42 +103,39 @@ function jadwal_simpan(int $kelasId, int $id, array $data): void
         }
 
         $cekPilihan = $pdo->prepare(
-            'SELECT 1 FROM dosen AS d CROSS JOIN ruangan AS r
-             WHERE d.id_dosen = :dosen AND r.id_ruangan = :ruangan'
+            'SELECT 1 FROM dosen AS d JOIN ruangan AS r USING (id_kelas)
+             WHERE d.id_kelas = :kelas AND d.id_dosen = :dosen AND r.id_ruangan = :ruangan'
         );
-        $cekPilihan->execute(['dosen' => $dosen, 'ruangan' => $ruangan]);
+        $cekPilihan->execute(['kelas' => $kelasId, 'dosen' => $dosen, 'ruangan' => $ruangan]);
         if (!$cekPilihan->fetchColumn()) {
-            throw new InvalidArgumentException('Dosen atau ruangan tidak ditemukan.');
+            throw new InvalidArgumentException('Dosen atau ruangan tidak tersedia untuk kelasmu.');
         }
 
         $cekBentrok = $pdo->prepare(
             'SELECT 1 FROM jadwal_kuliah AS j
-             JOIN mata_kuliah AS m ON m.id_matkul = j.id_matkul
              WHERE j.hari = :hari AND j.id_jadwal <> :id
                AND j.jam_mulai < CAST(:selesai AS time) AND j.jam_selesai > CAST(:mulai AS time)
-               AND (m.id_kelas = :kelas OR j.id_dosen = :dosen OR j.id_ruangan = :ruangan)
+               AND j.id_kelas = :kelas
              LIMIT 1'
         );
         $cekBentrok->execute([
             'hari' => $hari, 'id' => $id, 'mulai' => $mulai, 'selesai' => $selesai,
-            'kelas' => $kelasId, 'dosen' => $dosen, 'ruangan' => $ruangan,
+            'kelas' => $kelasId,
         ]);
         if ($cekBentrok->fetchColumn()) {
-            throw new InvalidArgumentException('Jam tersebut bentrok dengan jadwal kelas, dosen, atau ruangan.');
+            throw new InvalidArgumentException('Jam tersebut bentrok dengan jadwal kelasmu.');
         }
 
-        $params = ['matkul' => $matkul, 'dosen' => $dosen, 'ruangan' => $ruangan, 'hari' => $hari,
+        $params = ['kelas' => $kelasId, 'matkul' => $matkul, 'dosen' => $dosen, 'ruangan' => $ruangan, 'hari' => $hari,
                    'mulai' => $mulai, 'selesai' => $selesai, 'jenis' => $jenis];
         if ($id === 0) {
-            $sql = 'INSERT INTO jadwal_kuliah (id_matkul, id_dosen, id_ruangan, hari, jam_mulai, jam_selesai, jenis_pertemuan)
-                    VALUES (:matkul, :dosen, :ruangan, :hari, :mulai, :selesai, :jenis)';
+            $sql = 'INSERT INTO jadwal_kuliah (id_kelas, id_matkul, id_dosen, id_ruangan, hari, jam_mulai, jam_selesai, jenis_pertemuan)
+                    VALUES (:kelas, :matkul, :dosen, :ruangan, :hari, :mulai, :selesai, :jenis)';
         } else {
             $sql = 'UPDATE jadwal_kuliah AS j
                     SET id_matkul = :matkul, id_dosen = :dosen, id_ruangan = :ruangan,
                         hari = :hari, jam_mulai = :mulai, jam_selesai = :selesai, jenis_pertemuan = :jenis
-                    FROM mata_kuliah AS asal
-                    WHERE j.id_matkul = asal.id_matkul AND asal.id_kelas = :kelas AND j.id_jadwal = :id';
-            $params['kelas'] = $kelasId;
+                    WHERE j.id_kelas = :kelas AND j.id_jadwal = :id';
             $params['id'] = $id;
         }
         $stmt = $pdo->prepare($sql);
@@ -159,8 +155,7 @@ function jadwal_simpan(int $kelasId, int $id, array $data): void
 function jadwal_hapus(int $kelasId, int $id): bool
 {
     return db_exec(
-        'DELETE FROM jadwal_kuliah AS j USING mata_kuliah AS m
-         WHERE j.id_matkul = m.id_matkul AND m.id_kelas = :kelas AND j.id_jadwal = :id',
+        'DELETE FROM jadwal_kuliah WHERE id_kelas = :kelas AND id_jadwal = :id',
         ['kelas' => $kelasId, 'id' => $id]
     ) === 1;
 }

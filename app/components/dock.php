@@ -33,6 +33,7 @@ $dockLainnyaAktif = in_array($page, ['anggota', 'pengaturan'], true)
         <?php foreach ($dockTabs as $tab): ?>
             <a
                 href="<?= e(url($tab['route'])) ?>"
+                aria-label="<?= e($tab['label']) ?>"
                 <?= $page === $tab['route'] ? 'aria-current="page"' : '' ?>
                 class="group/tab flex min-h-11 min-w-0 flex-col items-center
                        justify-center gap-1 rounded-xl text-stone-400
@@ -50,6 +51,7 @@ $dockLainnyaAktif = in_array($page, ['anggota', 'pengaturan'], true)
 
         <button
             type="button"
+            aria-label="Lainnya"
             popovertarget="dock-lainnya"
             data-active="<?= $dockLainnyaAktif ? 'true' : 'false' ?>"
             class="group/more flex min-h-11 min-w-0 flex-col items-center
